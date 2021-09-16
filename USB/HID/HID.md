@@ -1,0 +1,1 @@
+* [STM32 使用Cubemx 建一个USB（HID）设备下位机，实现数据收发](https://www.cnblogs.com/xingboy/p/9913963.html)
