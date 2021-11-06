@@ -80,6 +80,40 @@ A[CPU] --> C[内存]
 
 
 # 配置
+### LwIP
+  ethernetif.c中定义了3个数组：
+```C
+ETH_DMADescTypeDef DMARxDscrTab[ETH_RX_DESC_CNT] __attribute__((section(".RxDecripSection"))); /* Ethernet Rx DMA Descriptors */
+ETH_DMADescTypeDef DMATxDscrTab[ETH_TX_DESC_CNT] __attribute__((section(".TxDecripSection")));   /* Ethernet Tx DMA Descriptors */
+uint8_t Rx_Buff[ETH_RX_DESC_CNT][ETH_RX_BUFFER_SIZE] __attribute__((section(".RxArraySection"))); /* Ethernet Receive Buffers */
+```
+
+  lwipopts.h文件中定义了堆栈地址:
+```C
+/*----- Default Value for H7 devices: 0x30044000 -----*/
+#define LWIP_RAM_HEAP_POINTER 0x30044000
+```
+
+  相应的section在ld文件中定义：
+```C
+  .ram_d2 (NOLOAD) :
+  {
+    . = ABSOLUTE(0x30040000);
+    *(.RxDecripSection)
+
+    . = ABSOLUTE(0x30040060);
+    *(.TxDecripSection)
+
+    . = ABSOLUTE(0x30040200);
+    *(.RxArraySection)
+  } >RAM_D2 AT> FLASH
+```
+
+  MPU配置：
+|地址|大小|S|C|B|说明|
+|--|--|--|--|--|--|
+|0x30040000|256B|1|0|1|定义了DMARxDscrTab和DMATxDscrTab的Cache策略(Rx_Buff为默认WBWA，但是手动配置都不行):<br>由于CPU和ETH_DMA会同时访问，即多主机，需要开启共享。实测配置为Strongly-ordered或Device时正常，其他都不行，很奇怪。</br>|
+|0x30044000|16KB|x|1|0|定义了heap的Cache策略：<br>1 配置为WT或Non-Cacheable时正常。</br><br>2 配置为Strongly-ordered或Device时，在执行到etharp.c的"SMEMCPY(&hdr->dhwaddr, hwdst_addr, ETH_HWADDR_LEN);"时出现UsageFault。</br><br>3 配置为WB时，ping会断，无法建立tcp连接，出现miscompare错误。</br><br>4 S属性不影响</br>|
 
 # 参考
 * [DM00237416-STM32F7 Series and STM32H7 Series Cortex®-M7 processor programming manual](https://www.st.com/content/ccc/resource/technical/document/programming_manual/group0/78/47/33/dd/30/37/4c/66/DM00237416/files/DM00237416.pdf/jcr:content/translations/en.DM00237416.pdf)
