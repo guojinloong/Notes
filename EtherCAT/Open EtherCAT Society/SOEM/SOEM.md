@@ -61,7 +61,7 @@
 ## 2.3 全局变量
 |名称|说明|
 |---|---|
-|ec_slavet ec_slave[EC_MAXSLAVE]||
+|ec_slavet ec_slave[EC_MAXSLAVE]|调用ec_config()时填充内容；ec_slave[0]为主站保留。|
 |int ec_slavecount||
 |ec_groupt ec_group[EC_MAXGROUP]||
 |boolean EcatError||
@@ -70,15 +70,16 @@
 ## 2.4 API
 |API|说明|
 |---|---|
-|int ec_init(const char \*ifname)|设置将用于EtherCAT的网卡，返回值>0成功。|
+|int ec_init(const char \*ifname)|初始化SOEM，设置将用于EtherCAT的网卡，返回值>0成功。|
+|int ec_config(uint8 usetable, void \* pIOmap)|枚举和初始化所有从站，并获取所有从站的PDO map到本地变量，返回值为发现的从站数，保存在ec_slavecount。同时初始化从站邮箱通信，并使所有从站进入SAFE_OP状态。相当于ec_config_init()和ec_config_map()。|
 |int ec_config_init(uint8 usetable)|枚举和初始化所有从站，返回值为发现的从站数，保存在ec_slavecount。<br>主站向地址0发送广播请求，从站收到后进行响应，主站收到的working counter值等于从站数。同时初始化从站邮箱通信，并使所有从站进入PRE_OP状态。</br>|
-|int ec_config_map(void \*pIOmap)|获取所有从站的PDO map到本地变量，返回值为IOmap大小。并请求从站进入SAFE_OP状态。|
+|int ec_config_map(void \*pIOmap)|获取所有从站的PDO map到本地变量，返回值为IOmap大小。并请求从站进入SAFE_OP状态。相当于ec_config_map_group()，group=0。|
 |int ec_config_map_group(void \*pIOmap, uint8 group)|将一组从站的所有输入/输出PDO按顺序映射到IOmap，返回值为IOmap大小，group=0表示所有组。并请求从站进入SAFE_OP状态。|
 |int ec_recover_slave(uint16 slave, int timeout)|恢复从站，返回值>0成功。|
 |int ec_reconfig_slave(uint16 slave, int timeout)|重新配置从站，返回值为从站状态。|
 |boolean ec_configdc(void)||
 |uint16 ec_statecheck(uint16 slave, uint16 reqstate, int timeout)|检查从站状态，代码阻塞直至目标从站为期望的状态或超时退出，slave=0表示所有从站。|
-|int ec_writestate(uint16 slave)|写从站状态，slave=0表示所有从站。先修改ec_slave[]的state后再调用。不检查实际状态是否改变，建议配合ec_statecheck使用。|
+|int ec_writestate(uint16 slave)|写从站状态，slave=0表示主站，写所有从站。先修改ec_slave[]的state后再调用。不检查实际状态是否改变，建议配合ec_statecheck使用。|
 |int ec_readstate(void)|读所有从站状态，保存在ec_slave[]的state中，返回最低的状态。|
 |int ec_send_processdata(void)|传输输入和输出过程数据，将输入数据保存在堆栈等待接收。|
 |int ec_receive_processdata(int timeout)|从堆栈获取接受到的输入数据，返回值为working counter。|
@@ -90,20 +91,20 @@
 |char \*ec_elist2string(void)|将错误列表中错误转换为字符串|
 |void ec_close(void)|关闭使用的socket|
 
-## 2.5 用法
-### 2.5.1 初始化
+# 3 使用
+## 3.1 初始化
   初始化流程：
 ```mermaid
 graph TD
-A[初始化SOEM并绑定网卡]-->B[查找并自动配置从站]-->C[配置PDO map]-->D[配置DC]-->E[检查从站是否进入SAFE_OP状态]-->F[发送一个有效的PDO数据以使从站输出活跃]-->G[使从站进入OP状态]-->H[检查从站是否进入OP状态]
+A[初始化SOEM并绑定网卡]-->B[查找并自动配置从站]-->D[配置DC]-->C[配置PDO map]-->E[检查从站是否进入SAFE_OP状态]-->F[发送一个有效的PDO数据以使从站输出活跃]-->G[使从站进入OP状态]-->H[检查从站是否进入OP状态]
 ```
 
 ```flow
 start=>start: 开始
 init=>condition: ec_init(ifname) > 0 ?
 config_init=>condition: ec_config_init(FALSE) > 0 ?
-config_map=>operation: ec_config_map(&IOmap)
 configdc=>operation: ec_configdc()
+config_map=>operation: ec_config_map(&IOmap)
 statecheck_safe_op=>operation: ec_statecheck(0, EC_STATE_SAFE_OP, EC_TIMEOUTSTATE* 4)
 send_processdata=>operation: ec_send_processdata()
 ec_receive_processdata(EC_TIMEOUTRET)
@@ -117,14 +118,16 @@ end=>end: 结束
 start->init
 init(yes)->config_init
 init(no)->error
-config_init(yes)->config_map->configdc->statecheck_safe_op->send_processdata->writestate_op->statecheck_op->error->end
+config_init(yes)->configdc->config_map->statecheck_safe_op->send_processdata->writestate_op->statecheck_op->error->end
 config_init(no)->error
 ```
 
-### 2.5.2 PDO
-### 2.5.3 SDO
+## 3.2 PDO
+## 3.3 SDO
+* SDO的数据交换使用Mailbox通信（请求+响应），因此SDO数据刷新时间不稳定。
+* PDO对象和SDO对象都可以通过SDO方式访问，Access属性定义了读写权限。
+* 当使能Complete Access时，必须从subindex为0或1开始读写。当某个index只有一个subindex时，subindex0就是用户数据，此时subindex只能为0；当某个index包含多个subindex时，subindex0是子索引个数（不含subindex0），subindex1往后是用户数据，此时subindex可以为0，也可以为1。
 
-
-## 3 参考
+# 4 参考
 * [SOEM-1.4.0 tutorial](https://openethercatsociety.github.io/doc/soem/tutorial_8txt.html)
 * [在Windows环境下使用SOEM进行EtherCAT开发——准备篇](https://wxflamy.github.io/2019/09/25/EtherCAT-SOEM/)
