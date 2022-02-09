@@ -2,6 +2,41 @@
 ===
 硬件
 ------
+  Zynq-7000包含了处理器系统（Processing System，PS）和可编程逻辑（Programmable Logic，PL）两部分，由一个双核ARM Cortex-A9处理器和一个Xilinx 7系列FPGA组成，将处理器的软件可编程性和FPGA的硬件可编程性完美进行整合。
+### PL
+### PS
+  ZYNQ实际上是一个以处理器为核心的系统，PL只是它的一个外设，且两部分的供电电路是独立的，都可以单独使用，不使用的部分可以断电。PL可以也用来搭建像MicroBlaze的嵌入式处理器，称为软核处理器，而PS是硬核处理器，性能更高，两者可以同时并协同工作。
+  ZYNQ处理器系统（PS）除了ARM处理器，还有一些相关的资源。
+* APU
+  应用处理器单元（Application Processing Unit，APU）包括两个ARM核、一个媒体处理引擎NEON和浮点单元FPU、一个内存管理单元MMU、一个一级Cache（指令和数据）。还有一个二级Cache和片上存储器（On Chip Memory，OCM），两个ARM共用。还有一个一致性控制单元（Snoop Control Unit，SCU），在ARM核与二级Cache及OCM之间形成了桥连接，还部分负责与PL对接。
+![APU](pic/APU.PNG)
+
+* 外部接口
+  PS和外部接口主要通过54个复用输入/输出（Multiplexed Input/Output，MIO）通信，当数量不够时还可以使用扩展MIO（Extended MIO，EMIO）共用PL的I/O资源。
+  此外，还有2路SPI、2路I2C、2路CAN、2路UART、2路SD、2路USB、2路GigE和4组x32位GPIO。
+
+* 存储器接口
+  包括一个动态存储器控制器和几个静态存储器接口模块。前者可以用于DDR3、DDR3L、DDR2或LPDDR2，后者可以支持一个NAND Flash、一个QSPI Flash、一个并行数据总线和并行NOR Flash。
+
+* 片上存储器
+  包括256KB RAM（OCM）和128KB ROM（BootROM），OCM支持两个64位AXI从机接口，一个专用于通过APU SCU的CPU/ACP访问，另一个由PS和PL内其他所有的总线主机所共享；BootROM专用于引导过程，用户不可见。
+
+* AXI
+  高级可扩展接口（Advanced eXtendsible Interface，AXI）用于片内处理器和PFGA间的通信，使用AXI4协议，支持三种接口。
+|类型|说明|
+|---|---|
+|AXI4|用于处理器访问存储器等需要指定地址的高速数据传输场景|
+|AXI4-Lite|简化版的AXI4接口，用于访问一些低速外设中的寄存器，数据量较少。|
+|AXI4-Stream|像FIFO一样不需要地址，在主从设备之间直接连续读写数据，用于视频、高速AD、PCIe、DMA等需要高速数据传输的场合。|
+
+  在PS和PL之间共有9个AXI接口，第一个字母的M（主机）或S（从机）表示的是PS的角色：
+|接口|说明|
+|---|---|
+|M_AXI_GP0~1|通用AXI（General Purpose，GP）是32位数据总线，适合PS和PL之间的中低速通信，是透传不带缓冲的。PS作为主机。|
+|S_AXI_GP0~1|同上，PL作为主机。|
+|S_AXI_ACP|加速器一致性个端口（Accelerator Coherency Port，ACP）是64位总线，用来实现APU Cache和PL单元之间的一致性。PL作为主机。|
+|S_AXI_HP0~3|高性能端口（High Performance Port，HP）是32位或64位数据总线，带有FIFO缓冲来提供批量读写操作，并支持PS和PL中存储器单元的高速通信。PL作为主机。|
+
 软件
 ------
 ### Vivado
@@ -20,9 +55,6 @@
 ![Vivado Installation Progress](pic/Vivado Installation Progress.PNG)
 ![Vivado Installation Completed Successfully](pic/Vivado Installation Completed Successfully.PNG)
 ![Vivado License Manager](pic/Vivado License Manager.PNG)
-
-  打开Vivado软件，显示首页，如下图所示：
-![Vivado Home](pic/Vivado Home.PNG)
 
 开发
 ===
@@ -47,6 +79,9 @@ A[新建工程]-->B[设计输入]-->C[分析与综合]-->D[约束输入]-->E[设
 ```
 
 #### 新建工程
+  打开Vivado软件，显示首页，如下图所示：
+![Vivado Home](pic/Vivado Home.PNG)
+
   点击首页的Create Project或菜单栏File-->Project-->New打开新建工程向导。
 ![New Project](pic/New Project.PNG)
 
