@@ -27,6 +27,32 @@
 
 [Getting Started with Qt](https://doc.qt.io/qt-6/gettingstarted.html)
 
+## 基础
+  Qt程序的基本结构如下：
+```C++
+#include <QApplication>
+#include <QLabel>
+
+int main(int argc, char *argv[])
+{
+  QApplication app(argc, argv);
+  QLabel *label = new QLable("Hello Qt!");
+  label->show();
+  return app.exec();
+}
+```
+
+  对于每个Qt类，都有一个与之同名且大写的头文件，其中包含了对该类的定义，使用之前必须包含其头文件。
+  QApplication类用来管理整个应用程序所用到的资源，包含两个参数（argc和argv），支持Qt自己的一些命令行参数。
+  窗口部件（Widget，Window gadget缩写）有按钮QButton、标签QLabel、滚动条QSlider、菜单栏QMenuBar、工具栏QToolBar、状态栏QStatusBar、框架QMainWindow、对话框QDialog等，窗口部件也可以包含其他窗口部件，绝大多数应用程序都会使用一个QMainWidnow或QDialog作为窗口，其实任意一个窗口部件都可以作为应用程序的窗口。
+
+
+### 信号和槽
+### 布局
+
+## 中级
+## 高级
+
 # 参考
 * [C++ GUI Programming with Qt4, 2nd Edition](https://www.informit.com/store/c-plus-plus-gui-programming-with-qt4-9780132354165)
 * [QT5的程序打包发布（打包成exe可执行程序）](https://blog.csdn.net/kangshuaibing/article/details/84951619)
