@@ -63,13 +63,15 @@
 ![Vivado License Manager](pic/Vivado License Manager.PNG)
 
 ### Vitis
-  [Vitis](https://china.xilinx.com/products/design-tools/vitis/vitis-platform.html)统一软件平台包含了Vitis AI开发环境、Vitis加速库、Vitis Core开发套件、Vitis RunTime库、Vitis目标平台、Vitis Model Composer等重要组件。
+  [Vitis](https://china.xilinx.com/products/design-tools/vitis/vitis-platform.html)统一软件平台包含了Vitis AI开发环境、Vitis加速库、Vitis Core开发套件（嵌入式软件开发）、Vitis RunTime库、Vitis目标平台、Vitis Model Composer等重要组件。
 
 #### 下载
   进入[Xilinx](https://www.xilinx.com/)官网，按照Products-->Software Development-->Vitis Software Platform导航到[Vitis](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vitis.html)下载页面，找到合适版本的安装包下载（本文以 Xilinx Vitis 2020.1为例Vitis，实际上可以使用之前下载的Vivado HLx 2020.1安装包）。
 
 #### 安装
   安装方法与Vivado类似，Select Product to Install时选择Vitis，接着自定义安装组件，开始安装。
+
+
 
 开发
 ===
@@ -337,9 +339,42 @@ A[创建Vivado工程]-->B[使用IP Intergrator创建Processing System]-->C[生�
 ![Exporting Hardware Platform](pic/Exporting Hardware Platform.PNG)
 
 #### 软件设计
+  打开Vitis软件，设置工作区并启动，显示欢迎页面。
+![Vitis Welcome](pic/Vitis Welcome.PNG)
+
+##### 创建平台项目
+  点击Create Platform Project或菜单File-->New->Platform Project打开平台项目创建页面，可以从硬件描述文件（XSA）创建或从已有的平台导入。输入工程名称hello_world，点击Next。
+![Create a New Platform Project](pic/Create a New Platform Project.PNG)
+
+  在Hardware Specification下点击Browse导入之前生成的XSA文件，在Software Specification下选择操作系统（standalone、freertos或linux），选择处理器（0或1）。
+![Create a new platform from hardware(XSA)](pic/Create a new platform from hardware(XSA).PNG)
+
+  点击Finish完成创建，点击工具栏锤子按钮编译工程。
+![Vitis Windows](pic/Vitis Windows.PNG)
+
+##### 创建应用项目
+  点击File-->New->Application Project打开应用项目创建页面，点击Next。
+![Create a New Application Project](pic/Create a New Application Project.PNG)
+
+  在Select a platform from repository下选择上一步创建的平台项目，点击Next。
+![Select a platform from repository](pic/Select a platform from repository.PNG)
+
+  在Applicaiton Project Details页面输入项目名称hello_world_app，点击Next。
+![Applicaiton Project Details](pic/Applicaiton Project Details.PNG)
+
+  显示Select a domain页面，直接点击Next。
+![Select a domain](pic/Select a domain.PNG)
+
+  在模板选择页面选择Hello World，点击Finish。
+![Select a template](pic/Select a template.PNG)
+
+  完成后回到主界面，展开src目录可以看到源文件，双击helloworld.c查看或编辑代码，最后编译生成elf文件。
+![hello word app](pic/hello word app.PNG)
+
+  连接到串口，打开串口调试软件，右键hello_world_app_system，选择Run As-->Lanch Hardware下载程序，观察串口是否打印Hello World信息。
 
 ### Linux开发
 
 参考
 ===
-* []()
+* [[Vivado 2020.1]ZYNQ7020折腾之路(一)之荔枝糖Hex入门输出“Hello,World!“](https://blog.csdn.net/qq_36229876/article/details/108054405)
