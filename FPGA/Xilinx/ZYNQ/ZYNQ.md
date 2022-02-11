@@ -5,10 +5,11 @@
   Zynq-7000包含了处理器系统（Processing System，PS）和可编程逻辑（Programmable Logic，PL）两部分，由一个双核ARM Cortex-A9处理器和一个Xilinx 7系列FPGA组成，将处理器的软件可编程性和FPGA的硬件可编程性完美进行整合。
 ### PL
 ### PS
-  ZYNQ实际上是一个以处理器为核心的系统，PL只是它的一个外设，且两部分的供电电路是独立的，都可以单独使用，不使用的部分可以断电。PL可以也用来搭建像MicroBlaze的嵌入式处理器，称为软核处理器，而PS是硬核处理器，性能更高，两者可以同时并协同工作。
+  ZYNQ实际上是一个以处理器为核心的系统，PL只是它的一个外设，且两部分的供电电路是独立的，都可以单独使用，不使用的部分可以断电。PL也可以用来搭建像MicroBlaze的嵌入式处理器，称为软核处理器，而PS是硬核处理器，性能更高，两者可以同时并协同工作。
   ZYNQ处理器系统（PS）除了ARM处理器，还有一些相关的资源。
+
 * APU
-  应用处理器单元（Application Processing Unit，APU）包括两个ARM核、一个媒体处理引擎NEON和浮点单元FPU、一个内存管理单元MMU、一个一级Cache（指令和数据）。还有一个二级Cache和片上存储器（On Chip Memory，OCM），两个ARM共用。还有一个一致性控制单元（Snoop Control Unit，SCU），在ARM核与二级Cache及OCM之间形成了桥连接，还部分负责与PL对接。
+  应用处理器单元（Application Processing Unit，APU）包括两个ARM核，且每个核都有一个媒体处理引擎NEON和浮点单元FPU、一个内存管理单元MMU、一个一级Cache（指令和数据）；一个二级Cache和片上存储器（On Chip Memory，OCM），两个ARM共用；一个一致性控制单元（Snoop Control Unit，SCU），在ARM核与二级Cache及OCM之间形成了桥连接，还部分负责与PL对接。
 ![APU](pic/APU.PNG)
 
 * 外部接口
@@ -37,8 +38,13 @@
 |S_AXI_ACP|加速器一致性个端口（Accelerator Coherency Port，ACP）是64位总线，用来实现APU Cache和PL单元之间的一致性。PL作为主机。|
 |S_AXI_HP0~3|高性能端口（High Performance Port，HP）是32位或64位数据总线，带有FIFO缓冲来提供批量读写操作，并支持PS和PL中存储器单元的高速通信。PL作为主机。|
 
+### IO
+  PS的IO Bank包括Bank500、Bank501和Bank502，PL的IO Bank包括Bank13、Bank34和Bank35。
+
 软件
 ------
+  现在Xilinx把软件部分Vitis（即2019.2以前的SDK）与硬件部分Vivado完全分开了。如果只开发硬件部分，只需要安装Vivado即可；如果还需要开发软件部分，则需要安装Vitis，同时也会安装Vivado。
+
 ### Vivado
 #### 下载
   进入[Xilinx](https://www.xilinx.com/)官网，按照Products-->Hardware Development-->Vivado ML导航到[Vivado](https://www.xilinx.com/products/design-tools/vivado.html)产品页面，在PLATFORM EDITIONS下选择[Standard Edition](https://www.xilinx.com/products/design-tools/vivado/vivado-ml.html)或[Enterprise Edition](https://www.xilinx.com/products/design-tools/vivado/vivado-ml-buy.html)版本，点击[Download from Download Center](https://www.xilinx.com/support/download.html)进入下载页面，找到合适版本的安装包下载（本文以 Vivado HLx 2020.1为例）。
@@ -55,6 +61,15 @@
 ![Vivado Installation Progress](pic/Vivado Installation Progress.PNG)
 ![Vivado Installation Completed Successfully](pic/Vivado Installation Completed Successfully.PNG)
 ![Vivado License Manager](pic/Vivado License Manager.PNG)
+
+### Vitis
+  [Vitis](https://china.xilinx.com/products/design-tools/vitis/vitis-platform.html)统一软件平台包含了Vitis AI开发环境、Vitis加速库、Vitis Core开发套件、Vitis RunTime库、Vitis目标平台、Vitis Model Composer等重要组件。
+
+#### 下载
+  进入[Xilinx](https://www.xilinx.com/)官网，按照Products-->Software Development-->Vitis Software Platform导航到[Vitis](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/vitis.html)下载页面，找到合适版本的安装包下载（本文以 Xilinx Vitis 2020.1为例Vitis，实际上可以使用之前下载的Vivado HLx 2020.1安装包）。
+
+#### 安装
+  安装方法与Vivado类似，Select Product to Install时选择Vitis，接着自定义安装组件，开始安装。
 
 开发
 ===
@@ -233,6 +248,96 @@ set_property PACKAGE_PIN J15 [get_ports sys_rst_n]
 ARM
 ------
 ### 嵌入式开发
+  ZYNQ的嵌入式开发分为以下六步，前四步为硬件设计部分，第五步为软件设计部分，第六步为功能的验证。
+```mermaid
+graph TD
+A[创建Vivado工程]-->B[使用IP Intergrator创建Processing System]-->C[生成顶层HDL]-->D[板级验证]-->E[在SDK中创建应用工程]-->F[生成Bitstream并导出到SDK]
+```
+
+  要进行ZYNQ嵌入式开发，首先要搭建嵌入式最小系统（由ARM Cortex-A9核、DDR3内存和UART串口组成）。
+
+#### 硬件设计
+##### 创建Vivado工程
+  参考FPGA开发部分的Vivado教程创建hello_world工程（不需要添加源文件和约束文件）。
+
+##### 使用IP Intergrator创建Processing System
+  点击Flow Navigator窗口IP INTEGRATOR下的Create Block Design，在弹出的对话框中输入设计名称system。
+![Create Block Design](pic/Create Block Design.PNG)
+
+  点击OK按钮，打开Block Design界面，在Diagram窗口以图形化的方式设计。
+![Block Design](pic/Block Design.PNG)
+
+  点击Diagram工具栏的+号打开IP目录，在搜索栏输入zynq，找到并双击ZYNQ7 Processing System，添加ZYNQ7处理系统IP。
+![ZYNQ7 Processing System](pic/ZYNQ7 Processing System.PNG)
+
+  双击添加的ZYNQ7 Processing System模块，进入ZYNQ处理系统的配置界面（类似于STM32CubeMX）。
+![ZYNQ7 Processing System Configuration](pic/ZYNQ7 Processing System Configuration.PNG)
+
+  Zynq Block Design以图形化的方式显示了Zynq处理系统（PS）的各种模块，其中灰色是固定的，绿色是可配置的。可以直接单击各种可配置块进入相应的配置页面，也可以使用左侧的Page Navigator导航到响应的页面配置。
+|页面|说明|
+|---|---|
+|PS-PL Configuration|配置PS-PL接口，包括AXI、HP和ACP总线接口。|
+|Peripheral I/O Pins|为不同I/O外设选择MIO/EMIO配置（引脚复用）|
+|MIO Configuration|为不同I/O外设具体配置MIO/EMIO（速度、上拉）|
+|Clock Configuration|配置PS输入时钟、外设时钟，以及DDR和CPU时钟等。|
+|DDR Configuration|设置DDR控制器配置信息|
+|SMC Timing Calculation|执行SMC时序计算|
+|Interrupts|配置PS-PL中断|
+
+  点击左侧Peripheral I/O Pins进入IO引脚配置页面，点击MIO14和MIO15下的UART0方块，此时方块会变成绿色，表明这两个脚被配置成了UART0的RXD和TXD。
+![Peripheral IO Pins](pic/Peripheral IO Pins.PNG)
+
+  点击左侧MIO Configuration进入MIO配置页面，详细配置UART0引脚信息。
+![MIO Configuration](pic/MIO Configuration.PNG)
+
+  点击左侧PS-PL Configuration进入PS-PL配置页面，配置UART0参数（波特率115200）。
+![PS-PL Configuration](pic/PS-PL Configuration.PNG)
+
+  点击左侧DDR Configuration进入DDR配置页面，在DDR Controller Configuration下配置DDR参数，Memory Part选择与自己所用DDR兼容的型号。
+![DDR Configuration](pic/DDR Configuration.PNG)
+
+  点击左侧Clock Configuration进入时钟配置页面，设置输入时钟与硬件一致，CPU、DDR和其他外设的时钟保持默认。
+  由于不需要使用PL，取消勾选Clock Configuration页面PL Fabric Clocks下的FCLK_CLK0、PS-PL Configuration页面General-->Enable CLock Resets下的FCLK_RESET0_N和AXI Non Secure Enablement-->GP Master AXI Interface下的M AXI GP0 interface，移除与PL相关的接口。
+![Clock Configuration](pic/Clock Configuration.PNG)
+![M AXI GP0 interface](pic/M AXI GP0 interface.PNG)
+
+  点击OK回到Diagram窗口，发现ZYNQ7 Processing System接口已经改变。
+![Diagram](pic/Diagram.PNG)
+
+  点击上方的Run Block Automation，在弹出的对话框选择自动连接IP模块的接口（包括导出外部端口、自动添加模块互联过程中所需的IP），确认勾选processing_system7_0。
+![Run Block Automation](pic/Run Block Automation.PNG)
+
+  点击OK完成，引出的接口将被分配到ZYNQ器件具体的管脚上，可以点击相应的+号展开，观察具体有哪些信号。
+![processing_system7_0](pic/processing_system7_0.PNG)
+
+  点击Diagram窗口工具栏的Validate Design按钮（快捷键F6）验证设计，完成后弹出成功对话框提示成功或错误和关键警告信息。
+
+##### 生成顶层HDL
+  在Sources-->Design Sources找到刚刚完成的设计system.bd，右键选择Generate Output Products，在弹出的窗口中设置Synthesis Options为Global和Run Settings下的线程数。
+![Generate Output Products](pic/Generate Output Products.PNG)
+
+  点击Generate来生成设计的综合、实现和仿真文件，完成后弹出成功提示框，点击OK。
+  在Sources窗口的IP Sources标签页可以看到生成的结果。
+![IP Sources](pic/IP Sources.PNG)
+
+  回到Hierarchy标签页，右键点击system.bd，选择Create HDL Wrapper，在弹出的对话框中勾选Let Vivado manage wrapper and auto-update（当修改了Block Design后Vivado会自动更新顶层模块），点击OK。
+![Create HDL Wrapper](pic/Create HDL Wrapper.PNG)
+
+  Design Sources结构如下，system_wrapper.v是创建的顶层模块，使用Verilog对设计进行封装，对Block Design例化，可以双击打开查看内容。
+![system_wrapper](pic/system_wrapper.PNG)
+
+##### 生成Bitstream
+  如果设计中使用了PL，则需要添加引脚约束并对该设计进行综合、实现并生成Bitstream文件。
+
+##### 导出硬件
+  点击菜单File-->Export-->Export Hardware，按照提示生成xsa文件。
+![Export Hardware Platform Type](pic/Export Hardware Platform Type.PNG)
+![Export Hardware Platform Output](pic/Export Hardware Platform Output.PNG)
+![Export Hardware Platform Files](pic/Export Hardware Platform Output.PNG)
+![Exporting Hardware Platform](pic/Exporting Hardware Platform.PNG)
+
+#### 软件设计
+
 ### Linux开发
 
 参考
