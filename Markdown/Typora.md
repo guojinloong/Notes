@@ -43,7 +43,7 @@ sudo vi Typora.desktop
 Name=Typora
 Exec=/opt/Typora-linux-x64/Typora
 Type=Application
-Icon=/opt/Typora-linux-x64/resources/asserts/icon/icon_512x512.png
+Icon=/opt/Typora-linux-x64/resources/assets/icon/icon_512x512.png
 ```
 
 使用
