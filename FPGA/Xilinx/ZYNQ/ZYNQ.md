@@ -90,15 +90,15 @@ cd Xilinx_Unified_2020.1_0602_1208
 
   配置Vitis环境变量。
 ```shell
-cd /opt/Vitis/2020.1
+cd /tools/Xilinx/Vitis/2020.1
 source settings64.sh
 aarch64-linux-gnu-gcc # 输入开头按TAB看能不能自动补全，验证环境是否设置成功
-echo "source /opt/Vitis/2020.1/settings64.sh" >> ~/.bashrc # 用户登陆时自动配置环境变量
+echo "source /tools/Xilinx/Vitis/2020.1/settings64.sh" >> ~/.bashrc # 用户登陆时自动配置环境变量
 ```
 
   安装JTAG驱动。
 ```shell
-cd /opt/Vitis/2020.1/data/xicom/cable_drivers/lin64/install_script/install_drivers/
+cd /tools/Xilinx/Vitis/2020.1/data/xicom/cable_drivers/lin64/install_script/install_drivers/
 sudo ./install_drivers
 #使用下面命令可以删除JTAG驱动
 sudo rm -f /etc/udev/rules.d/52-xilinx-digilent-usb.rules
@@ -110,6 +110,13 @@ sudo rm -f /etc/udev/rules.d/52-xilinx-pcusb.rules
 ```shell
 dpkg -i xrt_202010.2.6.655_18.04-amd64-xrt.deb
 ```
+
+#### 卸载
+```shell
+cd /tools/Xilinx/.xinstall/Vitis_2020.1
+./xsetup -Uninstall
+```
+![Vitis Uninstall](pic/Vitis Uninstall.png)
 
   Vitis使用教程可以参考[Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials)和[Vitis-Doc](https://www.xilinx.com/html_docs/xilinx2020_1/vitis_doc/index.html)。
 
@@ -2283,22 +2290,417 @@ A[BootROM]-->B[FSBL]
   使用PetaLinux设计流程如下：
 |步骤|工具/命令|
 |---|---|
-|Vivado|创建硬件平台，得到XSA文件|
+|Vivado|创建硬件平台，生成XSA文件|
 |petalinux-create -t project|创建PetaLinux工程|
-|petalinux-config --get-hw-description|初始化PetaLinux工程，将XSA文件导入并配置PetaLinux工程|
-|petalinux-config|配置系统层选项|
 |petalinux-create -t COMPONENT|创建用户器件|
+|petalinux-config|配置系统层选项|
+|petalinux-config --get-hw-description|导入XSA文件并配置PetaLinux工程|
 |petalinux-config -c kernel|配置Linux内核|
-|petalinux-config -c rootfs|配置根文件系统|
-|petalinux-build|构建系统|
-|petalinux-package|打包部署系统|
+|petalinux-config -c rootfs|配置Linux根文件系统|
+|petalinux-build|编译整个工程|
+|petalinux-package --boot|制作BOOT.BIN启动文件|
 |petalinux-boot|启动系统以测试|
+
+![Petalinux progress](pic/Petalinux progress.png)
 
 #### 使用PetaLinux定制系统
 ##### 使用Vivado创建硬件平台
+##### 使用PetaLinux创建系统工程
+###### 创建PetaLinux工程
+  创建PetaLinux工程zynq_petalinux，-t指定创建类型为project，--template指定平台模板为zynq，-n指定工程名称。
+```shell
+mkdir zynq_petalinux
+petalinux-create -t project --template zynq -n zynq_petalinux
+```
+
+###### 配置PetaLinux工程
+  首次配置PetaLinux工程时或硬件改动后，需要导入XSA文件，--get-hw_description指定XSA文件所在位置。后面想要重新配置，只需输入petalinux-config即可。
+```shell
+cd zynq_petalinux
+petalinux-config --get-hw-description /home/ubuntu/xilinx/Project/zynq_petalinux/vivado/
+```
+
+  弹出PetaLinux工程配置界面。
+![Petalinux Configuration](pic/Petalinux Configuration.png)
+
+* Linux Components Selection
+  前面两项表示生成FSBL.elf和自动更新ps_init，后面两项用来配置u-boot和kernel来源。
+![Linux Components Selection](pic/Linux Components Selection.png)
+
+* Auto Config Settings
+  设置是否自动配置Device tree、kernel和u-boot。
+![Auto Config Settings](pic/Auto Config Settings.png)
+
+* Subsystem AUTO Hardware Settings
+  这里的外设已经根据XSA文件自动配置好了，无需手动配置。Advanced bootable images storage Settings可以配置启动引导镜像和内核镜像的存储媒介，默认为SD卡。
+![Subsystem AUTO Hardware Settings](pic/Subsystem AUTO Hardware Settings.png)
+
+* DTG Settings
+  配置设备树。
+![DTG Settings](pic/DTG Settings.png)
+
+* FSBL Configuration
+![FSBL Configuration](pic/FSBL Configuration.png)
+
+* FPGA Manager
+![FPGA Manager](pic/FPGA Manager.png)
+
+* u-boot Configuration
+  配置u-boot。
+![u-boot Configuration](pic/u-boot Configuration.png)
+
+* Image Packaging Configuration
+  Root filesystem type设置根文件系统类型，选择INITRAMFS，可以选择SD/eMMC等。Copy final images to tftpboot选型，当在Ubuntu的根文件下创建一个名为tftpboot的文件夹时，工程生成镜像后会自动复制过去，这里去掉选项，否则最后容易失败。
+![Image Packaging Configuration](pic/Image Packaging Configuration.png)
+
+* Firmware Version Configuration
+  设置Linux系统的主机名和产品名，默认与PetaLinux工程同名。
+![Firmware Version Configuration](pic/Firmware Version Configuration.png)
+
+* Yocto Settings
+![Yocto Settings](pic/Yocto Settings.png)
 
 ```shell
+Yocto Settings  --->
+  Parallel thread execution  --->
+    (8) sets number of bb threads (BB_NUMBER_THREADS) # 设置8线程执行任务
+    (8) sets number of parallel make -j (PARALLEL_MAKE) # 编译代码时使用8线程，这两项可以根据CPU情况自行调整，一般为2N，N为CPU核心数。
+  Add pre-mirror url   ---> # 设置从内网下载镜像（一般是一些源码或编译好的镜像），从公网拉取往往需要1，2天时间
+  [*] Enable Network sstate feeds (NEW)
+    Network sstate feeds URL  ---> # # 设置从内网下载一些工具等
+```
 
+  设置完成后保存退出，PetaLinux会根据Auto Config Settings和Subsystem AUTO Hardware Settings来解析硬件描述文件，以获取更新设备树、u-boot配置文件和内核配置文件所需的硬件信息。
+
+###### 配置Linux内核
+```shell
+petalinux-config -c kernel
+```
+
+  等待一段时间后，弹出Linux内核配置界面，保持默认，直接保存退出。
+![Kernel Configuration](pic/Kernel Configuration.png)
+
+###### 配置Linux根文件系统
+```shell
+petalinux-config -c rootfs
+```
+
+  弹出根文件系统配置界面，PetaLinux RootFS Settings可以用来设置root用户密码，默认为root。
+![rootfs configuration](pic/rootfs configuration.png)
+
+###### 配置设备树文件
+  打开project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi文件，添加各种设备配置信息。
+```c
+/include/ "system-conf.dtsi"
+
+#define GPIO_ACTIVE_HIGH   0
+#define GPIO_ACTIVE_LOW    1
+
+/ {
+    model = "Navigator Development Board";
+    compatible = "alientek,zynq-7020","xlnx,zynq-7000";
+
+    usb_phy0: phy0@e0002000 {
+        compatible = "ulpi-phy";
+        #phy-cells = <0>;
+        reg = <0xe0002000 0x1000>;
+        view-port = <0x0170>;
+        drv-vbus;
+    };
+
+    leds {
+        compatible = "gpio-leds";
+
+        gpio-led1 {
+            label = "ps_led1";
+            gpios = <&gpio0 0 GPIO_ACTIVE_HIGH>;
+            default-state = "on";
+        };
+
+        gpio-led2 {
+            label = "ps_led2";
+            gpios = <&gpio0 7 GPIO_ACTIVE_HIGH>;
+            linux,default-trigger = "timer";
+        };
+
+        gpio-led3 {
+            label = "ps_led3";
+            gpios = <&gpio0 8 GPIO_ACTIVE_HIGH>;
+            default-state = "on";
+        };
+
+        gpio-led4 {
+            label = "pl_led1";
+            gpios = <&gpio0 58 GPIO_ACTIVE_HIGH>;
+            linux,default-trigger = "timer";
+        };
+
+        gpio-led5 {
+            label = "pl_led2";
+            gpios = <&gpio0 59 GPIO_ACTIVE_HIGH>;
+            default-state = "on";
+        };
+
+        gpio-led6 {
+            label = "pl_led3";
+            gpios = <&gpio0 60 GPIO_ACTIVE_HIGH>;
+            default-state = "on";
+        };
+    };
+
+    keys {
+        compatible = "gpio-keys-polled";
+        poll-interval = <20>;
+        autorepeat;
+
+        touch-key {
+            label = "touch_key";
+            gpios = <&gpio0 56 GPIO_ACTIVE_HIGH>;
+            linux,code = <1>;     // ESC
+        };
+
+        gpio-key1 {
+            label = "pl_key1";
+            gpios = <&gpio0 54 GPIO_ACTIVE_LOW>;
+            linux,code = <105>;   // Right
+        };
+
+        gpio-key2 {
+            label = "pl_key2";
+            gpios = <&gpio0 55 GPIO_ACTIVE_LOW>;
+            linux,code = <106>;   // Left
+        };
+
+        gpio-key3 {
+            label = "ps_key1";
+            gpios = <&gpio0 11 GPIO_ACTIVE_LOW>;
+            linux,code = <103>;   // Up
+        };
+
+        gpio-key4 {
+            label = "ps_key2";
+            gpios = <&gpio0 12 GPIO_ACTIVE_LOW>;
+            linux,code = <108>;   // Down
+        };
+    };
+
+    beep {
+        compatible = "gpio-beeper";
+        gpios = <&gpio0 57 GPIO_ACTIVE_HIGH>;
+    };
+};
+
+&i2c1 {
+    clock-frequency = <100000>;
+
+    eeprom@50 {
+        compatible = "atmel,24c64";
+        reg = <0x50>;
+        pagesize = <32>;
+    };
+
+    rtc@51 {
+        compatible = "nxp,pcf8563";
+        reg = <0x51>;
+    };
+};
+
+&usb0 {
+    status = "okay";
+    dr_mode = "otg";
+    usb-phy = <&usb_phy0>;
+};
+```
+
+###### 编译PetaLinux工程
+  编译整个PetaLinux工程，生成设备树DTB文件、FSBL文件、u-boot、kernel、启动脚本和根文件系统映像（images目录下）。
+```shell
+petalinux-build
+
+INFO: sourcing build tools
+[INFO] building project
+[INFO] sourcing build environment
+[INFO] generating user layers
+[INFO] generating workspace directory
+INFO: bitbake petalinux-image-minimal
+Loading cache: 100% |#######################################################| Time: 0:00:00
+Loaded 4229 entries from dependency cache.
+Parsing recipes: 100% |#####################################################| Time: 0:00:07
+Parsing of 2961 .bb files complete (2959 cached, 2 parsed). 4230 targets, 189 skipped, 0 masked, 0 errors.
+NOTE: Resolving any missing task queue dependencies
+Initialising tasks: 100% |##################################################| Time: 0:00:03
+Checking sstate mirror object availability: 100% |##########################| Time: 0:00:03
+Sstate summary: Wanted 928 Found 760 Missed 168 Current 40 (81% match, 82% complete)
+NOTE: Executing Tasks
+NOTE: Setscene tasks completed
+NOTE: linux-xlnx: compiling from external source tree /home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/zynq_petalinux/components/yocto/workspace/sources/linux-xlnx
+NOTE: Tasks Summary: Attempted 3509 tasks of which 2621 didn't need to be rerun and all succeeded.
+INFO: copy to TFTP-boot directory is not enabled !!
+[INFO] successfully built project
+```
+
+![petalinux-build files](pic/petalinux-build files.png)
+
+###### 制作BOOT.BIN启动文件
+  ZYNQ的启动文件BOOT.BIN一般包含FSBL文件、bitstream文件和u-boot文件。
+```shell
+petalinux-package --boot --fsbl ./images/linux/zynq_fsbl.elf --fpga --u-boot --force
+
+INFO: sourcing build tools
+INFO: File in BOOT BIN: "/home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/zynq_petalinux/images/linux/zynq_fsbl.elf"
+INFO: File in BOOT BIN: "/home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/zynq_petalinux/project-spec/hw-description/zynq_petalinux_wrapper.bit"
+INFO: File in BOOT BIN: "/home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/zynq_petalinux/images/linux/u-boot.elf"
+INFO: File in BOOT BIN: "/home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/zynq_petalinux/images/linux/system.dtb"
+INFO: Generating Zynq binary package BOOT.BIN...
+
+
+****** Xilinx Bootgen v2020.1
+  **** Build date : May 26 2020-14:07:15
+    ** Copyright 1986-2020 Xilinx, Inc. All Rights Reserved.
+
+
+[INFO]   : Bootimage generated successfully
+
+INFO: Binary is ready.
+```
+
+###### 制作SD启动卡
+  使用fdisk命令为SD卡创建分区，第一个分区为FAT32格式，大小为500M，设为引导分区；剩下的空间作为第二分区，ext4格式。
+```shell
+sudo fdisk /dev/sdb
+
+Welcome to fdisk (util-linux 2.31.1).
+Changes will remain in memory only, until you decide to write them.
+Be careful before using the write command.
+
+
+Command (m for help): p
+Disk /dev/sdb: 7.4 GiB, 7969177600 bytes, 15564800 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: 0x98c1973d
+
+Device     Boot  Start      End  Sectors  Size Id Type
+/dev/sdb1  *         1   262143   262143  128M  c W95 FAT32 (LBA)
+/dev/sdb2       262144 15564799 15302656  7.3G 83 Linux
+
+Command (m for help): d
+Partition number (1,2, default 2):
+
+Partition 2 has been deleted.
+
+Command (m for help): d
+Selected partition 1
+Partition 1 has been deleted.
+
+Command (m for help): n
+Partition type
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended (container for logical partitions)
+Select (default p): p
+Partition number (1-4, default 1):
+First sector (2048-15564799, default 2048):
+Last sector, +sectors or +size{K,M,G,T,P} (2048-15564799, default 15564799): +500M
+
+Created a new partition 1 of type 'Linux' and of size 500 MiB.
+
+Command (m for help): t
+Selected partition 1
+Hex code (type L to list all codes): c
+Changed type of partition 'Linux' to 'W95 FAT32 (LBA)'.
+
+Command (m for help): a
+Selected partition 1
+The bootable flag on partition 1 is enabled now.
+
+Command (m for help): n
+Partition type
+   p   primary (1 primary, 0 extended, 3 free)
+   e   extended (container for logical partitions)
+Select (default p):
+
+Using default response p.
+Partition number (2-4, default 2):
+First sector (1026048-15564799, default 1026048):
+Last sector, +sectors or +size{K,M,G,T,P} (1026048-15564799, default 15564799):
+
+Created a new partition 2 of type 'Linux' and of size 7 GiB.
+
+Command (m for help): p
+Disk /dev/sdb: 7.4 GiB, 7969177600 bytes, 15564800 sectors
+Units: sectors of 1 * 512 = 512 bytes
+Sector size (logical/physical): 512 bytes / 512 bytes
+I/O size (minimum/optimal): 512 bytes / 512 bytes
+Disklabel type: dos
+Disk identifier: 0x98c1973d
+
+Device     Boot   Start      End  Sectors  Size Id Type
+/dev/sdb1  *       2048  1026047  1024000  500M  c W95 FAT32 (LBA)
+/dev/sdb2       1026048 15564799 14538752    7G 83 Linux
+
+Command (m for help): w
+The partition table has been altered.
+Calling ioctl() to re-read partition table.
+Syncing disks.
+```
+
+  然后使用mkfs命令格式化分区，将第一个分区格式化为FAT32分区并命名为BOOT，将第二个分区格式化为ext4分区并命名为rootfs。
+```shell
+sudo mkfs.vfat -F 32 -n BOOT /dev/sdb1
+sudo mkfs.ext4 -L rootfs /dev/sdb2
+```
+
+  挂载分区，并拷贝boot.scr、BOOT.BIN和image.ub到BOOT分区。
+
+###### 启动测试
+* QEMU模拟启动
+  首先使用petalinux-package命令打包预编译镜像。
+```shell
+petalinux-package --prebuilt --fpga ./project-spec/hw-description/zynq_petalinux_wrapper.bit
+
+INFO: Updating software prebuilt
+INFO: Installing software images
+INFO: Pre-built directory is updated.
+```
+
+  然后使用petalinux-boot命令启动预编译镜像。如果想退出，先按Ctrl+A，再按X即可。
+```shell
+petalinux-boot --qemu --prebuilt 3
+```
+* 启动选项：--qemu启动软件仿真，--jtag启动硬件；--u-boot启动u-boot，--kernel启动kernel
+* 启动等级1：下载预编译好的FPGA数据流文件，启动FSBL
+* 启动等级2：下载预编译好的FPGA数据流文件，启动FSBL，然后启动u-boot
+* 启动等级3：下载预编译好的FPGA数据流文件，启动FSBL，然后启动u-boot，最后启动kernel
+
+* SD卡启动
+  将开发板设置为SD卡启动，插入SD卡，打开串口终端，上电。查看串口打印信息，启动完成后提示如下信息，输入用户名root和密码root，登陆系统。另外还可以看到开发板上LED1、LED2、PL_LED1和PS_LED1常亮，PL_LED0和PS_LED0闪烁。
+```C
+PetaLinux 2020.1 zynq_petalinux /dev/ttyPS0
+
+zynq_petalinux login:
+```
+
+#### 使用Vitis开发Linux应用
+  创建平台项目zynq_petalinux_bsp，操作系统选择linux，点击Finish完成，编译。
+![zynq_petalinux_bsp platform](pic/zynq_petalinux_bsp platform.png)
+
+  创建应用项目zynq_petalinux_app，模板选择Linux Hello World，点击Finish完成，编译。
+![zynq_petalinux_app template](pic/zynq_petalinux_app template.png)
+
+  将生成的zynq_petalinux_app.elf拷贝到开发板中（USB、SSH、TFTP、NFS等），通过./zynq_petalinux_app.elf命令运行。
+
+#### 使用Linux显示设备
+  需要配置PetaLinux工程和Linux内核以及设备树来驱动HDMI或LCD的显示。
+  修改Linux内核来源，可以选择remote并设置URL为远程仓库（Xilinx官方[linux-xlnx](https://github.com/Xilinx/linux-xlnx.git)或开发板定制[linux](https://gitee.com/greatdream/linux.git)。也可以将源码下载到本地，然后选择ext-local-src并设置路径为本地源码位置。保存并退出。
+```shell
+petalinux-config
+```
+
+  查看内核配置，进入Device Drivers-->Graphics support菜单，选择显示驱动。
+```shell
+petalinux-config -c kernel
 ```
 
 问题
