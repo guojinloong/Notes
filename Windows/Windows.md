@@ -1,4 +1,27 @@
+# 系统
+## 命令
+### 跳转（cd）
+#### 在同一盘符内跳转
+  cd直接跟一个目录名称
+```shell
+cd Desktop # 相对路径
+cd C:\Users\jinlongguo\Desktop # 绝对路径
+```
 
+#### 跨盘符跳转
+  有两种方法：
+* 先切换盘符，再跳转目录
+```shell
+D:
+cd D:\Software
+```
+
+* cd后加”/d“选项，一步到位
+```shell
+cd /d D:\Software
+```
+
+# 编程
 ## 线程同步
 |临界区|互斥器|信号量|
 |---|---|---|
