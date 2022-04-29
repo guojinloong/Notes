@@ -106,6 +106,9 @@ sudo rm -f /etc/udev/rules.d/52-xilinx-ftdi-usb.rules
 sudo rm -f /etc/udev/rules.d/52-xilinx-pcusb.rules
 ```
 
+  如果使用虚拟机，连接硬件时可能会出现如下错误，需要设置虚拟机的USB兼容性为USB3.1（默认为USB2.0）。
+![No active target](pic/No active target.png)
+
   此外，加速应用的开发环境需要安装[Xilinx Runtime](https://china.xilinx.com/support/download/index.html/content/xilinx/zh/downloadNav/embedded-platforms/archive-vitis-embedded.html)，下载合适的安装包[xrt_202010.2.6.655_18.04-amd64-xrt.deb](https://china.xilinx.com/bin/public/openDownload?filename=xrt_202010.2.6.655_18.04-amd64-xrt.deb)，执行如下命令安装。
 ```shell
 dpkg -i xrt_202010.2.6.655_18.04-amd64-xrt.deb
@@ -2367,7 +2370,21 @@ Yocto Settings  --->
     (8) sets number of parallel make -j (PARALLEL_MAKE) # 编译代码时使用8线程，这两项可以根据CPU情况自行调整，一般为2N，N为CPU核心数。
   Add pre-mirror url   ---> # 设置从内网下载镜像（一般是一些源码或编译好的镜像），从公网拉取往往需要1，2天时间
   [*] Enable Network sstate feeds (NEW)
-    Network sstate feeds URL  ---> # # 设置从内网下载一些工具等
+    Network sstate feeds URL  ---> # 设置从内网下载一些工具等
+```
+
+  Network sstate feeds URL和pre-mirror url path默认为：
+> http://petalinux.xilinx.com/sswreleases/rel-v${PETALINUX_VER%%.*}/arm/sstate-cache
+> http://petalinux.xilinx.com/sswreleases/rel-v${PETALINUX_VER%%.*}/downloads
+
+  代入实际的PetaLinux版本后：
+> http://petalinux.xilinx.com/sswreleases/rel-v2020/arm/sstate-cache/
+> http://petalinux.xilinx.com/sswreleases/rel-v2020/downloads
+
+  使用wget下载，然后设置Network sstate feeds URL和pre-mirror url path为本地路径。
+```shell
+wget -c -r -np -nH -R index.html -P /home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/ http://petalinux.xilinx.com/sswreleases/rel-v2020/arm/sstate-cache/
+wget -c -r -np -nH -R index.html -P /home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/ http://petalinux.xilinx.com/sswreleases/rel-v2020/downloads
 ```
 
   设置完成后保存退出，PetaLinux会根据Auto Config Settings和Subsystem AUTO Hardware Settings来解析硬件描述文件，以获取更新设备树、u-boot配置文件和内核配置文件所需的硬件信息。
@@ -2691,16 +2708,93 @@ zynq_petalinux login:
 
   将生成的zynq_petalinux_app.elf拷贝到开发板中（USB、SSH、TFTP、NFS等），通过./zynq_petalinux_app.elf命令运行。
 
-#### 使用Linux显示设备
+#### 使用Linux显示设备（未编译通过）
   需要配置PetaLinux工程和Linux内核以及设备树来驱动HDMI或LCD的显示。
-  修改Linux内核来源，可以选择remote并设置URL为远程仓库（Xilinx官方[linux-xlnx](https://github.com/Xilinx/linux-xlnx.git)或开发板定制[linux](https://gitee.com/greatdream/linux.git)。也可以将源码下载到本地，然后选择ext-local-src并设置路径为本地源码位置。保存并退出。
 ```shell
 petalinux-config
 ```
 
-  查看内核配置，进入Device Drivers-->Graphics support菜单，选择显示驱动。
+  修改Linux内核来源，可以选择remote并设置URL为远程仓库（[Xilinx](https://github.com/Xilinx/linux-xlnx)提供的[linux-xlnx](https://github.com/Xilinx/linux-xlnx.git)或[正点原子](https://gitee.com/greatdream)提供的[ZYNQ-linux](https://gitee.com/greatdream/linux.git)。也可以将源码下载到本地，然后选择ext-local-src并指定本地路径。另外需要设置内核许可证信息（许可证文件为内核源码根目录下的COPYING，使用md5sum命令计算其md5值），否则编译时进行检查会报错（do_populate_lic: QA Issue: linux-xlnx: The LIC_FILES_CHKSUM does not match），保存并退出。
+![External linux-kernel local source settings](pic/External linux-kernel local source settings.png)
+
+  修改u-boot来源，可以选择remote并设置URL为远程仓库（[正点原子](https://gitee.com/greatdream)提供的[ZYNQ-uboot](https://gitee.com/greatdream/uboot.git)）。也可以将源码下载到本地，然后选择ext-local-src并指定本地路径。另外还需要设置u-boot许可证信息（许可证文件为u-boot源码根目录下的README，使用md5sum命令计算其md5值），否则编译时进行检查会报错，保存并退出。
+![External u-boot local source settings](pic/External u-boot local source settings.png)
+
+  修改了内核来源后，需要先清除之前的内核配置，默认的内核源码位置位于/home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/zynq_petalinux/components/yocto/workspace/sources/linux-xlnx，执行以下命令会清空所有源码。
+```shell
+petalinux-build -c linux-xlnx -x reset
+```
+![petalinux-config -c kernel](pic/petalinux-config -c kernel.png)
+
+  重新配置内核，进入Device Drivers-->Graphics support菜单，选择显示驱动为原子提供的选项。
 ```shell
 petalinux-config -c kernel
+```
+![Kernel Graphics support](pic/Kernel Graphics support.png)
+
+  在开始编译之前，还需要做一些修改，防止出错：
+* 1. 在“/ project-spec/meta-user/recipes-kernel/linux/ linux-xlnx\_%.bbappend”文件内加入KERNEL_VERSION_SANITY_SKIP="1"，避免由于PetaLinux版本和内核版本不匹配而报错。
+  注意：若petalinux-config--> DTG 配置保持默认的 template 选项，工具不会自动新建 project-spec/meta-user/recipes-kernel/linux 文件夹，我们需要手动创建 linux-xlnx\_%.bbappend文件并添加如下内容。
+```shell
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+
+KERNEL_VERSION_SANITY_SKIP = "1"
+```
+
+* 2. TODO
+
+  编译工程，生成BOOT.BIN，启动测试。
+
+#### Linux图形界面的使用（使用原子系统测试）
+##### 下载带图形界面文件系统
+  Linux常用的图形界面有GNOME、KDE、XFCE、LXDE等，后两个定位于轻量级的桌面，可用于硬件性能配置不高的电脑或嵌入式领域（也可以是使用Qt搭建）。
+  Linaro公司提供了Linux不同发行版的根文件系统，进入[Linaro releases](https://releases.linaro.org/)。
+![Linaro releases](pic/Linaro releases.png)
+
+  进入debian/images目录，可以看到debian不同发行版的根文件系统，名称带arm64的用于ARM 64位架构，带armhf的用于ARM 32位架构，其中alip版本带图形界面。
+![Linaro releases debian images](pic/Linaro releases debian images.jpg)
+
+  进入alip-armhf，可以看到很多历史版本，数字代表发布时间。
+![Linaro releases debian images alip-armhf time](pic/Linaro releases debian images alip-armhf time.jpg)
+
+  进入latest，可以看到最近的发布版本，其中，其中linaro-jessie-alip-20161117-32.tar.gz就是根文件系统，可以直接点击下载或者右键复制链接并用工具下载。
+![Linaro releases debian images alip-armhf files](pic/Linaro releases debian images alip-armhf files.jpg)
+
+  如果想尝试Ubuntu系统可以进入ubuntu/images/gnome/latest/，下载linaro-vivid-gnome-20151215-714.tar.gz（实际测试Ubuntu桌面启动不了）。
+
+##### 重新配置PetaLinux工程
+  执行petalinux-config重新配置PetaLinux工程。
+```shell
+petalinux-config
+````
+
+  进入Image Packaging Configuration-->Root filesystem type，选择EXT4(SD/eMMC/SATA/USB)项，保存配置并退出。
+![Root filesystem type](pic/Root filesystem type.png)
+
+  编译整个PetaLinux工程，并打包生成BOOT.BIN文件。
+```shell
+petalinux-build
+petalinux-package --boot --fsbl ./image/linux/zynq_fsbl.elf --fpga --u-boot --force
+````
+
+##### 制作启动SD卡并测试
+  拷贝image/linux下的UBOOT.BIN和image.ub到SD卡的boot分区。
+  解压根文件系统linaro-jessie-alip-20161117-32.tar.gz到SD卡的rootfs分区。
+```shell
+sudo tar zxvf linaro-jessie-alip-20161117-32.tar.gz -C /media/ubuntu/rootfs
+sync
+sync
+```
+
+  这时可以看到，rootfs分区多了一个binary文件夹，根文件系统就在里面，需要移动到根目录，然后删除binary文件夹。
+```shell
+sudo mv binary/* ./
+sudo rmdir binary/
+```
+
+  卸载SD卡，插到开发板上启动测试。
+```shell
+sudo umount /dev/sdb*
 ```
 
 问题
@@ -2734,10 +2828,28 @@ include:
 
 clean:
 	rm -rf ${OBJECTS} ${ASSEMBLY_OBJECTS}
+```
 
+* 使用git管理仓库
+  PetaLinux工程的.gitignore配置如下：
+```GIT
+.petalinux
+!.petalinux/metadata
+build/
+images/linux
+pre-built/linux
+components/plnx-workspace/
+components/yocto/
+*/*/config.old
+*/*/rootfs_config.old
+*.o
+*.log
+*.jou
 ```
 
 参考
 ===
 * [[Vivado 2020.1]ZYNQ7020折腾之路(一)之荔枝糖Hex入门输出“Hello,World!“](https://blog.csdn.net/qq_36229876/article/details/108054405)
 * [Drivers and Makefiles problems in Vitis 2020.2](https://support.xilinx.com/s/question/0D52E00006hpOx5SAE/drivers-and-makefiles-problems-in-vitis-20202?language=en_US)
+* [使用Petalinux定制Linux系统](https://www.cnblogs.com/Mike2019/p/14293018.html)
+* [ZYNQ #0 petalinux的使用与工程建立](https://blog.csdn.net/sements/article/details/88921275)
