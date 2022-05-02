@@ -123,25 +123,26 @@ cd /tools/Xilinx/.xinstall/Vitis_2020.1
 
   Vitis使用教程可以参考[Vitis-Tutorials](https://github.com/Xilinx/Vitis-Tutorials)和[Vitis-Doc](https://www.xilinx.com/html_docs/xilinx2020_1/vitis_doc/index.html)。
 
-### Petalinux
-  Petalinux工具是一个包含了u-boot、linux kernel、device tree、rootfs等源码和库以及Yocto recipes的嵌入式Linux开发套件，可以方便地生成、配置、编译集自定义Linux系统，大大简化了Linux系统的开发工作。
+### PetaLinux
+  PetaLinux工具是一个包含了u-boot、linux kernel、device tree、rootfs等源码和库以及Yocto recipes的嵌入式Linux开发套件，可以方便地生成、配置、编译集自定义Linux系统，大大简化了Linux系统的开发工作。
 
 ### 下载
-  进入[Xilinx](https://www.xilinx.com/)官网，按照Products-->Embedded Development-->Embedded Software & Ecosystem导航到Embedded Software Infrastructure页面，点击Petalinux按钮进入PetaLinux Tools页面，点击Download & Licensing-->Download PetaLinux进入[下载](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/embedded-design-tools.html)页面，找到合适版本的安装包下载（本文以 PetaLinux 2020.1为例）。
+  进入[Xilinx](https://www.xilinx.com/)官网，按照Products-->Embedded Development-->Embedded Software & Ecosystem导航到Embedded Software Infrastructure页面，点击PetaLinux按钮进入PetaLinux Tools页面，点击Download & Licensing-->Download PetaLinux进入[下载](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/embedded-design-tools.html)页面，找到合适版本的安装包下载（本文以 PetaLinux 2020.1为例）。
 
 ### 安装
-  在安装Petalinux之前需要先安装一些必要的运行软件和依赖库。
+  在安装PetaLinux之前需要先安装一些必要的运行软件和依赖库。
 ```shell
 sudo apt-get install gawk build-essential net-tools xterm autoconf libtool zlib1g-dev gcc-multilib texinfo libncurses5-dev zlib1g:i386 tftpd-hpa
 ```
 
-  安装Petalinux到/opt/petalinux目录下。
+  安装PetaLinux到/tools/PetaLinux目录下。
 ```shell
-cd “petalinux安装包位置”
-sudo chown -R $USER:$USER /opt #修改/opt文件夹属性为当前用户
-./petalinux-v2020.1-final-installer.run -d /opt/petalinux
+cd “PetaLinux安装包位置”
+sudo mkdir -p /tools/PetaLinux
+sudo chown -R $USER:$USER /tools #修改/tools文件夹属性为当前用户
+./petalinux-v2020.1-final-installer.run -d /tools/PetaLinux
 ```
-![Petalinux install](pic/Petalinux install.png)
+![PetaLinux install](pic/PetaLinux Install.png)
 
   配置系统shell为bash。
 ```shell
@@ -149,17 +150,17 @@ sudo dpkg-reconfigure dash #选择No回车
 ```
 ![Configuring dash](pic/Configuring dash.png)
 
-  配置Petalinux环境变量。
+  配置PetaLinux环境变量。
 ```shell
-cd /opt/petalinux
+cd /tools/PetaLinux
 source settings.sh
 echo $PETALINUX # 验证环境是否设置成功
-echo "source /opt/petalinux/settings.sh" >> ~/.bashrc # 每次登陆时自动配置环境变量
+echo "source /tools/PetaLinux/settings.sh" >> ~/.bashrc # 每次登陆时自动配置环境变量
 ```
 
   安装JTAG驱动。
 ```shell
-cd /opt/petalinux/tools/xsct/data/xicom/cable_drivers/lin64/install_script/install_drivers/
+cd /tools/PetaLinux/tools/xsct/data/xicom/cable_drivers/lin64/install_script/install_drivers/
 sudo ./install_drivers
 #使用下面命令可以删除JTAG驱动
 sudo rm -f /etc/udev/rules.d/52-xilinx-digilent-usb.rules
@@ -2304,7 +2305,7 @@ A[BootROM]-->B[FSBL]
 |petalinux-package --boot|制作BOOT.BIN启动文件|
 |petalinux-boot|启动系统以测试|
 
-![Petalinux progress](pic/Petalinux progress.png)
+![PetaLinux Design Steps](pic/PetaLinux Design Steps.png)
 
 #### 使用PetaLinux定制系统
 ##### 使用Vivado创建硬件平台
@@ -2324,7 +2325,7 @@ petalinux-config --get-hw-description /home/ubuntu/xilinx/Project/zynq_petalinux
 ```
 
   弹出PetaLinux工程配置界面。
-![Petalinux Configuration](pic/Petalinux Configuration.png)
+![PetaLinux Configuration](pic/PetaLinux Configuration.png)
 
 * Linux Components Selection
   前面两项表示生成FSBL.elf和自动更新ps_init，后面两项用来配置u-boot和kernel来源。
@@ -2714,10 +2715,10 @@ zynq_petalinux login:
 petalinux-config
 ```
 
-  修改Linux内核来源，可以选择remote并设置URL为远程仓库（[Xilinx](https://github.com/Xilinx/linux-xlnx)提供的[linux-xlnx](https://github.com/Xilinx/linux-xlnx.git)或[正点原子](https://gitee.com/greatdream)提供的[ZYNQ-linux](https://gitee.com/greatdream/linux.git)。也可以将源码下载到本地，然后选择ext-local-src并指定本地路径。另外需要设置内核许可证信息（许可证文件为内核源码根目录下的COPYING，使用md5sum命令计算其md5值），否则编译时进行检查会报错（do_populate_lic: QA Issue: linux-xlnx: The LIC_FILES_CHKSUM does not match），保存并退出。
+  修改Linux内核来源，可以选择remote并设置URL为远程仓库（[Xilinx](https://github.com/Xilinx)提供的[linux-xlnx](https://github.com/Xilinx/linux-xlnx.git)或[正点原子](https://gitee.com/greatdream)提供的[ZYNQ-linux](https://gitee.com/greatdream/linux.git)。也可以将源码下载到本地，然后选择ext-local-src并指定本地路径。另外需要设置内核许可证信息（许可证文件为内核源码根目录下的COPYING，使用md5sum命令计算其md5值），否则编译时进行检查会报错（do_populate_lic: QA Issue: linux-xlnx: The LIC_FILES_CHKSUM does not match），保存并退出。
 ![External linux-kernel local source settings](pic/External linux-kernel local source settings.png)
 
-  修改u-boot来源，可以选择remote并设置URL为远程仓库（[正点原子](https://gitee.com/greatdream)提供的[ZYNQ-uboot](https://gitee.com/greatdream/uboot.git)）。也可以将源码下载到本地，然后选择ext-local-src并指定本地路径。另外还需要设置u-boot许可证信息（许可证文件为u-boot源码根目录下的README，使用md5sum命令计算其md5值），否则编译时进行检查会报错，保存并退出。
+  修改u-boot来源，可以选择remote并设置URL为远程仓库（[Xilinx](https://github.com/Xilinx)提供的[u-boot-xlnx](https://github.com/Xilinx/u-boot-xlnx)或[正点原子](https://gitee.com/greatdream)提供的[ZYNQ-uboot](https://gitee.com/greatdream/uboot.git)）。也可以将源码下载到本地，然后选择ext-local-src并指定本地路径。另外还需要设置u-boot许可证信息（许可证文件为u-boot源码根目录下的README，使用md5sum命令计算其md5值），否则编译时进行检查会报错，保存并退出。
 ![External u-boot local source settings](pic/External u-boot local source settings.png)
 
   修改了内核来源后，需要先清除之前的内核配置，默认的内核源码位置位于/home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/zynq_petalinux/components/yocto/workspace/sources/linux-xlnx，执行以下命令会清空所有源码。
