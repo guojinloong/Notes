@@ -184,20 +184,32 @@ FPGA
   Xilinx Vivado高层综合（High-Level Synthesis，HLS）工具将高级语言代码综合成HDL描述，最后再进行逻辑综合得到网表，这个网表最终会被映射到具体的FPGA器件上。
 
 ### FPGA开发
+#### 基本流程
   FPGA开发流程如下：
 ```mermaid
 graph TD
 A[新建工程]-->B[设计输入]-->C[分析与综合]-->D[约束输入]-->E[设计实现]-->F[生成和下载比特流]
 ```
 
-#### 新建工程
+|流程|说明|
+|---|---|
+|新建工程|打开Vivado软件，使用新建工程向导新建工程。|
+|设计输入|工程创建完成后，需要新建一个Verilog顶层文件，然后输入设计代码。|
+|分析与综合|分析（Elaborated）是编译RTL源文件并进行全面的语法检查。<br>综合（Synthesis）就是综合器将RTL设计转变为由FPGA器件中的查找表（LUT）、触发器（FF）等各种底层电路单元所组成的网表，并对设计进行优化（如删除多余的逻辑等）。|
+|约束输入|约束（Constraint）表达了设计者期望满足的时序要求，并在综合、实现阶段来指导工具进行布局、布线，工具会按照约束尽量去努力实现以满足时序要求，并在时序报告中给出结果。常用的约束包括时序约束、引脚约束等等。|
+|设计实现|实现（Implementation）整个设计，包括布局和布线等。|
+|生成和下载比特流|生成用于下载到期间的比特流（Bit Stream）文件，并通过下载器将比特流文件下载到FPGA中，完成整个开发流程。|
+
+  接下来以LED闪烁实验（led_twinkle）来演示整个开发流程。
+
+##### 新建工程
   打开Vivado软件，显示首页，如下图所示：
 ![Vivado Home](pic/Vivado Home.PNG)
 
   点击首页的Create Project或菜单栏File-->Project-->New打开新建工程向导。
 ![New Project](pic/New Project.PNG)
 
-  点击Next，输入工程名称和路径，勾选Create project subdirectory以便Vivado自动管理工程文件夹内的各种工程文件并创建相应的子目录。
+  点击Next，输入工程名称和路径。若勾选Create project subdirectory选项，Vivado会在所选工程目录下自动创建一个与工程同名的文件夹，用于存放工程内的各种文件。Vivado会自动管理工程文件夹内的各种工程文件，并创建相应的子目录。
 ![Project Name](pic/Project Name.PNG)
 
   点击Next，可以看到几种工程类型，选择RTL Project。
@@ -220,7 +232,10 @@ A[新建工程]-->B[设计输入]-->C[分析与综合]-->D[约束输入]-->E[设
   点击Next，选择芯片型号或开发板类型，在搜索框中输入xc7z020clg400-2，并用鼠标选中。
 ![Default Part](pic/Default Part.PNG)
 
-  点击Next，进入工程概览页面，检查无误后点击FInish完成工程的创建，初始化完成后显示工程界面。
+  点击Next，进入工程概览页面，检查无误后点击FInish完成工程的创建。
+![New Project Summary](pic/New Project Summary.PNG)
+
+  初始化完成后显示工程界面。
 ![Project Window](pic/Project Window.PNG)
 
 |子窗口|说明|
@@ -228,7 +243,7 @@ A[新建工程]-->B[设计输入]-->C[分析与综合]-->D[约束输入]-->E[设
 |菜单栏|所有命令|
 |工具栏|常用命令|
 |Flow Navigator|提供了从设计输入到生成比特流的整个过程的命令和工具，点击了相应的命令后，整个工程主界面的各个子窗口可能会做出相应的更改。|
-|Sources|显示层次结构（Hierarchy）、库（Libraries）和编译顺序（Compile Order）|
+|Sources|显示层次结构（Hierarchy）、IP源文件（IP Sources）、库（Libraries）和编译顺序（Compile Order）的视图。|
 |Netlist|提供分析（Elaborated）或综合（Synthesised）后的逻辑设计的分层视图|
 |Properties|显示有关所选逻辑对象或器件资源的特性信息|
 |Project Summary|提供了当前工程的摘要信息，运行设计命令时动态更新。|
@@ -239,11 +254,13 @@ A[新建工程]-->B[设计输入]-->C[分析与综合]-->D[约束输入]-->E[设
 |状态和结果窗口|显示运行命令的状态和结果以及消息、日志和报告等<br></br>Tcl Console：输入Tcl命令<br></br>Messages：显示报警信息，如Error、Critical Warning、Warning等<br></br>Log：显示综合、实现和仿真run的日志文件<br></br>Reports：可以查看整个设计流程中的活动run所生程的报告<br></br>Designs Runs：管理当前工程的runs|
 |Default Layout|窗口布局选择器，也可以使用菜单栏的Layout命令。|
 
-#### 设计输入
+##### 设计输入
   点击Sources窗口中的+号，弹出添加源文件向导，选择Add or create design sources。
 ![Add Sources Guides](pic/Add Sources Guides.PNG)
 
   点击Next，在弹出的页面中创建或添加源文件。
+![Add Sources](pic/Add Sources.PNG)
+
   点击Add Files添加事先编写好的代码。
 ![Add Source Files](pic/Add Source Files.PNG)
 
@@ -283,18 +300,23 @@ end
 endmodule
 ```
 
-#### 分析与综合
-* 分析
-  点击Flow Navigator窗口RTL ANALYSIS下的Open Elaborated Design开始对RTL源文件进行语法检查和分析，并在Messages窗口显示Error和Warning。分析成功后会生成顶层原始图，并在Schematic窗口显示，在Netlist窗口显示网表信息。
+**注意：**
+* 点击左侧Flow Navigation-->PROJECT MANAGER-->Seetings或菜单栏Tools-->Seetings打开设置对话框，在Tool Settings-->Text Editor-->Fonts and Colors页面可以设置字体、字号和颜色。
+* 点击工具栏保存按钮或按Ctrl + S保存文件后，Vivado会对源文件进行部分语法的检查，如果有语法错误会各处提示。另外，大多数情况下，Vivado会自动识别设计的顶层模块，如果没有，用户可以右键源文件选择Set as Top来手动指定顶层模块。
+
+##### 分析与综合
+###### 分析
+  点击Flow Navigator窗口RTL ANALYSIS下的Open Elaborated Design开始对RTL源文件进行语法检查和分析，并在Messages窗口显示Error和Warning。分析成功后会生成顶层原理图，并在Schematic窗口显示，在Netlist窗口显示网表信息。
 ![Elaborated Design](pic/Elaborated Design.PNG)
 
   在Elaborated Design窗口顶部右键，选择Close关闭分析后的界面。
 
-* 综合
+###### 综合
   点击Flow Navigator窗口SYNTHESIS下的Run Synthesis，接着点击OK，开始对代码进行综合，可以在Design Runs窗口查看进度。完成后显示如下窗口，点击Cancel关闭。
 ![Synthesis Completed](pic/Synthesis Completed.PNG)
 
-#### 约束输入
+##### 约束输入
+###### 手动输入约束规则
   点击Sources窗口中的+号，弹出添加源文件向导，选择Add or create constraint创建约束文件。
   点击Next，在弹出的页面中创建或添加约束文件。
   点击Add Files添加事先编写好的约束文件。
@@ -305,29 +327,48 @@ endmodule
 ![Add or Create Constraints](pic/Add or Create Constraints.PNG)
 
   点击Finish，这时在Sources窗口的Constraints下可以看到刚刚创建的约束文件led_twinkle.xdc。
-  双击打开约束文件，开始对工程进行约束，包括对IO引脚的约束和对时序的约束。
+  双击打开约束文件，开始对工程进行约束，包括对IO引脚的约束和对时序的约束。输入如下内容：
+```verilog
+#IO 管脚约束
+set_property -dict {PACKAGE_PIN U18 IOSTANDARD LVCMOS33} [get_ports sys_clk]
+set_property -dict {PACKAGE_PIN J15 IOSTANDARD LVCMOS33} [get_ports sys_rst_n]
+set_property -dict {PACKAGE_PIN J18 IOSTANDARD LVCMOS33} [get_ports {led[0]}]
+set_property -dict {PACKAGE_PIN H18 IOSTANDARD LVCMOS33} [get_ports {led[1]}]
+#时钟周期约束
+create_clock -name clk -period 20 [get_ports sys_clk]
+```
 
+* 每条语句单独占一行，结尾不需要结束符（如“;”）
+* “#”号表示注释
+* 每条命令第一个关键字代表该命令的名称，其后的所有字段都是该命令的参数列表。
+* 使用“set_property”命令对管教位置和电平标准进行约束：以第二行为例，“PACKAGE_PIN U18”定义引脚位置；“IOSTANDARD LVCMOS33”定义电平标准；“[get_ports sys_clk]”定义该约束所附加的对象是sys_clk引脚。
+* “create_clock”命令创建一个时钟：“-name clk”表示所创建的时钟名称是“clk“；”-period 20”表示时钟周期是20ns（50MHz）在做约束时可以等于或略低于这个值，但不建议设置的太小，负责软件在布局布线时很难满足要求；”[get_ports sys_clk]“表示该时钟约束所附加的对象即时钟源是sys_clk。一般支队输入的时钟做周期约束。
+
+###### 使用I/O Planning
 * 对I/O引脚约束
   打开Elaborated Design窗口，在右上角的布局选择器中选择I/O Planning开始I/O引脚分配。
 ![IO Planning](pic/IO Planning.PNG)
 
-  在I/O Ports窗口为每个信号分配I/O引脚，按Ctrl + S，在弹出的窗口中选择Select existing file保存到led_twinkle.xdc。
-  最后点击OK，可以打开led_twinkle.xdc文件查看修改。
+  在I/O Ports窗口为每个信号分配I/O引脚，按Ctrl + S，在弹出的窗口中选择Create a new file并输入约束文件名led_twinkle，或者选择Select existing file保存到之前创建的led_twinkle.xdc，最后点击OK。可以在Sources-->Constraints-->constrs_1下找到并打开led_twinkle.xdc文件以查看和修改。
 ```verilog
 set_property PACKAGE_PIN H18 [get_ports {led[1]}]
 set_property PACKAGE_PIN J18 [get_ports {led[0]}]
 set_property PACKAGE_PIN U18 [get_ports sys_clk]
 set_property PACKAGE_PIN J15 [get_ports sys_rst_n]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[1]}]
+set_property IOSTANDARD LVCMOS33 [get_ports {led[0]}]
+set_property IOSTANDARD LVCMOS33 [get_ports sys_clk]
+set_property IOSTANDARD LVCMOS33 [get_ports sys_rst_n]
 ```
 
 * 对时序约束
   略
 
-#### 设计实现
+##### 设计实现
   点击Flow Navigator窗口IMPLEMENTATION下的Run Implementation，在弹出的窗口直接点击OK，开始对设计进行实现，可以在Design Runs窗口查看进度。完成后显示成功窗口，点击Cancel关闭。
 ![Design Runs](pic/Design Runs.PNG)
 
-#### 生成和下载比特流
+##### 生成和下载比特流
   点击Flow Navigator窗口PROGRAM AND DEBUG下的Generate Bitstream，在弹出的窗口直接点击OK，开始生成比特流文件（\*.bit），可以在Design Runs窗口查看进度。完成后显示成功窗口，点击Cancel关闭。
   点击Flow Navigator窗口PROGRAM AND DEBUG下的Open Hardware Manager打开硬件管理界面。
 ![Hardware Manager](pic/Hardware Manager.PNG)
@@ -339,6 +380,231 @@ set_property PACKAGE_PIN J15 [get_ports sys_rst_n]
 ![Program Device](pic/Program Device.PNG)
 
   需要注意的是，这里下载的程序断电后会丢失，后面需要将程序固化到开发板。
+
+#### 集成逻辑分析仪
+  Vivado中有一个集成逻辑分析仪（Integrated Logic Analyzer，ILA），以IP核的形式加入到用户设计中。Vivado提供了三种具有不同集成层次的插入ILA方法，以满足不同用户的需求。
+1. HDL实例化调试探针流程：直接在HDL代码中例化一个ILA IP核。这是集成层次最高的方法，但灵活性较差，在调试完毕后，需要在HDL源码中删除ILA IP核。
+2. 网表插入调试探针流程：在综合后的网表中，分别标记要进行调试观察的各个信号，然后通过一个简单的”Setup Debug“向导来设置各个探针和ILA IP核的工作参数，然后工具会根据用户设置的参数，自动地生成各个ILA IP核。用户不需要修改HDL源码，并能单独控制每个ILA IP核以及每个探针，具有很大的灵活性。用户设置的调试信息会议Tcl XDC调试命令的形式保存到XDC约束文件中，在实现阶段，Vivado会读取这些XDC调试命令，并在布局布线时加入这些ILA IP核。在调试完毕后，用户可以自综合后的网表中删除ILA IP核，或者在XDC文件中删除调试命令。
+3. 手动在XDC约束文件中书写对应的Tcl XDC调试命令，之后同上。这种方法集成层次最低，一般不会使用。
+
+##### HDL实例化调试探针流程
+  点击Flow Navigation窗口PROJECT MANAGER下的IP Catalog，在弹出的IP Catalog窗口中输入”ILA“，双击ILA（Integrated Logic Analyzer）IP核打开配置界面，参数设置如下：
+![ILA led_twinkle Genernal Options](pic/ILA led_twinkle Genernal Options.PNG)
+![ILA led_twinkle Probe_Ports](pic/ILA led_twinkle Probe_Ports.PNG)
+
+  点击OK，在弹出的对话框继续点击OK，接着弹出”Generate Output Products“对话框，直接点击Generate按钮。
+  此时，Vivado开始对ILA IP核进行OOC（Out-of Context）综合。对于顶层设计，Vivado使用自顶向下的全局（Global）综合方式，将顶层之下的所有逻辑模块都进行综合，但是设置为OOC方式的模块除外，它们独立于顶层设置而单独综合。OOC综合是一种自底向上的设计流程，OOC模块可以是来自IP Catalog的IP、来自Vivado IP Intergrator的block design或者顶层模块下手动设置为OOC方式的任何子模块。来自IP Catalog的IP默认使用OOC综合方式，在顶层的全局综合之前，单独地进行OOC综合并生成输出产品（Generate Output Products），包括综合后地网表等各种文件。之后对顶层进行综合时，OOC模块不会参与，其网表会在综合之后的实现过程中，参与到全局设计的实现。
+  可以在Design Runs窗口中看到OOC综合过程和结果：
+![Design Runs led_twinkle ILA](pic/Design Runs led_twinkle ILA.PNG)
+
+  在Sources-->IP Sources-->IP-->ila_0-->Instantiation Template下找到ILA IP核的例化模板文件ila_0.veo，双击打开查看模板内容，复制例化代码到led_twinkle.v顶层HDL代码中，并将ILA的时钟和探针信号连接到顶层设计中，代码如下：
+```verilog
+ila_0 u_ila_0 (
+    .clk(sys_clk), // input wire clk
+
+    .probe0(sys_rst_n), // input wire [0:0]  probe0
+    .probe1(led), // input wire [1:0]  probe1
+    .probe2(cnt) // input wire [25:0]  probe2
+);
+```
+
+  点击Flow Navigation窗口PROGRAM AND DEBUG下的Generate Bitstream，对设计进行综合实现并生成比特流。接着点击Open Hardware Manager打开硬件管理界面，将开发板通过Xilinx下载器连接到电脑，打开开发板电源，点击Hardware窗口的Auto Connect按钮连接开发板。然后点击上方的Program device，在弹出的窗口选择之前生成的比特流文件led_twinkle.bit和具有调试探针信息的调试探测文件led_twinkle.ltx，点击Program按钮下载程序。
+![Program Device led_twinkle ILA](pic/Program Device led_twinkle ILA.PNG)
+
+  此时，Vivado会自动打开ILA的调试窗口，点击”Waveform - hw_ila_1“窗口下的+号添加探针信号到波形窗口。然后点击”Run trigger for this ILA core“按钮开始采样，采集到的波形如下：
+![led_twinkle ILA waveform](pic/led_twinkle ILA waveform.PNG)
+
+  在Trigger Setup窗口中添加触发条件，点击+号，将cnt信号添加进来，设置触发条件如下图所示。
+![Trigger Setup led_twinkle](pic/Trigger Setup led_twinkle.PNG)
+
+  波形窗口中有4个触发动作：自动触发开关、开始触发、立即触发、停止触发。当选中了”自动触发开关“，点击”开始触发“按钮后，会不断地检测触发条件，每次触发时都会刷新波形，直到点击”停止触发“按钮。若没有选中，点击”开始触发“按钮后，在检测到触发条件后就会停止触发。也可以点击”立即触发“按钮立刻刷新波形。波形窗口中有一条红色竖线，最上面有个”T“字，标记了触发条件满足的时刻。
+![ILA trigger buttons](pic/ILA trigger buttons.PNG)
+
+  调试完毕后，可以将ILA例化代码注释掉，并在Sources-->Design Sources选中ila_0，然后在Source File Properties窗口中取消勾选”Enabled“项，刷新后ila_0移到了Disabled Sources下。
+
+##### 网表插入调试探针流程
+  有以下两种方法：
+一. 在综合后的网表中手动选择网络并点击”mark_debug“按钮，将要进行调试观察的各个信号标记”mark_debug“属性，然后通过”Setup Debug“向导来设置ILA IP核的参数，最后工具会根据参数来自动创建ILA IP核。
+二. 在综合前在HDL代码中为想要观察的reg或wire信号添加”Mark Debug“综合属性，紧挨在变量声明的前面使用”(\* mark_debug = "true" \*)“标记，这些信号不会被工具优化掉。
+  若使用第二种方法添加”Mark Debug“属性，则修改代码如下：
+```verilog
+module led_twinkle(
+    input sys_clk,
+(* mark_debug = "true" *)    input sys_rst_n,
+(* mark_debug = "true" *)    output [1:0] led
+    );
+
+(* mark_debug = "true" *) reg [25:0] cnt;
+```
+
+  点击Flow Navigation-->SYNTHESIS-->Run Synthesis进行综合，完成后点击Open Synthesized Design打开综合后的设计窗口，点击右上角的窗口布局选择器，选择“Debug”窗口布局。此时，Vivado打开了Netlist子窗口、Schematic子窗口以及Debug子窗口，如下图所示：
+![Synthesized Design ILA](pic/Synthesized Design ILA.PNG)
+
+  Netlist子窗口和Schematic子窗口都可以用于标记要进行观察的信号，Debug子窗口用于显示并设置ILA IP核的各个参数。在Debug子窗口中又包含Debug Cores核Debug Nets两个选项卡，用于显示所有标记为”Mark Debug“的信号。Debug Cores以ILA IP核为中心，所有标记为”Mark Debug“的信号并且已经被分配到ILA探针的信号都会被显示在各个ILA IP核的视图树下，否则显示在Unassigned Debug Nets下。Debug Nets不显示ILA IP核，所有标记为”Mark Debug“的信号并且已经被分配到ILA探针的信号都会被显示Assigned Nets下，否则显示在Unassigned Debug Nets下。在HDL代码中已经添加了”Mark Debug“属性的信号会自动出现在Unassigned Debug Nets下。
+
+  若之前没有使用第二种方法添加”Mark Debug“属性，则需要手动标记要进行观察的信号。在Netlists子窗口或Schematic子窗口中，右键要添加标记的网络（此时另一个子窗口中也会自动选中此网络）并选择Mark Debug（或Unmark Debug取消标记），如下图所示：
+![Mark Debug ILA](pic/Mark Debug ILA.png)
+
+  此时在Debug子窗口的Debug Nets选项卡的Unassigned Debug Nets下会出现刚刚标记地网络，点击Debug子窗口上方甲壳虫图案的Set Up Debug按钮，弹出Set Up Debug向导，点击Next继续。接下来选择采样待测信号的时钟域（Clock Domain），Vivado会自动识别各个待测信号所属的时钟域并将其自动设为采样时钟，如下图：
+![Set Up Debug Nets to Debug ILA](pic/Set Up Debug Nets to Debug ILA.PNG)
+
+  也可以手动指定各个用于采样待测信号的时钟域，选中该信号并点击上方的Select Clock Domain按钮，或者右键选择Select Clock Domain，弹出Select Clock Domain对话框，完成后点击OK。Set Up Debug向导会为每个采样时钟生成一个单独的ILA IP核。
+![Select Clock Domain ILA](pic/Select Clock Domain ILA.PNG)
+
+  点击Next，接下来设置ILA IP核的全局参数，其中”Sample of data depth“用于设置采样深度，”Input pipe stages“用于设置待测信号和其采样时钟之间的同步级数。若采样待测信号与其时钟之间是异步的，为了避免亚稳态，此数值最好不要低于2。由于本例的两个待测信号与其采样时钟是同步的，所以可以设置为0。
+![Set Up Debug ILA Core Options ILA](pic/Set Up Debug ILA Core Options ILA.PNG)
+
+  点击Next，进入最后的概览页面，确认无误后点击Finish完成。
+![Set Up Debug Summary ILA](pic/Set Up Debug Summary ILA.PNG)
+
+  此时，在Debug子窗口的Debug Cores选项卡中，可以看到已经添加了ILA IP核，且Unassigned Debug Nets下已经没有未分配的信号了。
+![Debug ILA IP](pic/Debug ILA IP.PNG)
+
+  网表中被标记为Mark Debug的信号也变成了虚线，表示其完成了ILA IP核的分配，如下图所示。
+![Schematic ILA](pic/Schematic ILA.PNG)
+
+  点击工具栏的保存按钮或按Ctrl + S快捷键，在弹出的消息框直接点击OK（如果弹出Save Constraint对话框，询问用户保存到哪个XDC约束文件中，选择Select an existing file并选择led_twinkle.xdc，然后点击OK）。
+![Out of Date Design ILA](pic/Out of Date Design ILA.PNG)
+
+  打开led_twinkle.xdc，可以看到增加了一些用于debug的约束命令。接下来就可以实现设计，Vivado会读取这些约束，并按照这些命令的参数来自动加入ILA IP核。最后生成比特流，下载并观察信号。
+![led_twinkle.xdc ILA](pic/led_twinkle.xdc ILA.PNG)
+
+  调试完毕后，可以删除led_twinkle.v源代码中信号的Mark Debug属性核XDC文件中包含的Tcl调试命令。
+
+#### 仿真
+  根据下图所示的FPGA设计流程，在设计输入之后、设计综合之前进行RTL仿真，成为综合前仿真，也称为前仿真或功能仿真，主要验证电路的功能是否符合设计要求，不考虑电路门延迟和线延迟。在完成设计代码编写后，直接对HDL代码进行仿真，检测源代码是否符合功能要求，可以比较直观的观察波形的变化，在设计的最初阶段发现问题。
+  在布局布线后进行的仿真称为布局布线后仿真，也称为后仿真或时序仿真，真实反映了逻辑的时延与功能，综合考虑电路的路径延迟与门延迟的影响，验证电路能否在一定时序条件下满足设计构想的过程是否存在时序违规。
+![FPGA Design Procedures](pic/FPGA Design Procedures.PNG)
+
+  Vivado集成了Vivado Simulator，能够在设计流程的不同阶段进行功能仿真和时序仿真，并在波形查看器中显示结果。此外，Vivado还支持与ModelSim、Verilog Compiler Simulator（VCS）、Questa Advanced Simulator等第三方仿真器的联合仿真。
+
+##### 功能仿真
+  功能仿真需要以下文件：
+* 设计HDL源代码（Unit Under Test，UUT）：可以是VHDL或Verilog语言，既可以是顶层模块 ，又可以是下层子模块。
+
+* 测试激励代码（TestBench）：根据UUT顶层输入/输出接口的设计要求，来产生顶层输入接口的测试激励并监视顶层输出接口。不需要进行综合，书写有很大的灵活性。
+
+* 仿真模型/库：根据设计内调用的器件供应商提供的模块而定，如FIFO、ADD_SUB等。在使用Vivado Simulator时，仿真器所需要的仿真模型/库是预先编译好并集成在Vivado中的，因此不需要进行额外的预编译操作，直接加载HDL设计和TestBench即可执行仿真。
+
+  点击Sources窗口中的+号，弹出添加源文件向导，选择Add or create simulation sources创建仿真源文件。
+  点击Next，在弹出的页面中创建或添加仿真源文件。
+  点击Add Files添加事先编写好的仿真源文件。
+  或者点击Create File，弹出创建仿真源文件窗口，设置文件类型、名称和路径。
+![Create Test Bench File](pic/Create Test Bench File.PNG)
+
+  点击OK，可以看到文件列表中已经有了刚刚创建的仿真源文件。
+![Add or Create Simulation Sources](pic/Add or Create Simulation Sources.PNG)
+
+  点击Finish，弹出定义模块页面，用于设置仿真源文件的模块名称和端口列表，Vivado都会自动生成相应的代码，也可以后面自己手动添加。
+![Define Test Bench Module](pic/Define Test Bench Module.PNG)
+
+  点击OK，紧接着弹出模块定义确认按钮，点击Yes，这时在Sources窗口的Simulation Sources-->sim_1下可以看到刚刚创建的仿真源文件tb_led_twinkle.v。
+  双击源文件打开文本编辑器，输入Test Bench激励代码如下：
+```verilog
+// 规定时间单位和精度
+`timescale 1ns / 1ps
+
+// 定义Test Bench模块名
+module tb_led_twinkle();
+
+// 输入
+reg sys_clk;
+reg sys_rst_n;
+// 输出
+wire [1:0] led;
+
+// 信号初始化
+initial
+begin
+  sys_clk = 1'b0;
+  sys_rst_n = 1'b0;
+  #200
+  sys_rst_n = 1'b1;
+end
+
+// 生成时钟
+always #10 sys_clk = ~sys_clk;
+
+// 例化待测设计
+led_twinkle u_led_twinkle(
+  .sys_clk(sys_clk),
+  .sys_rst_n(sys_rst_n),
+  .led(led)
+  );
+
+end module
+```
+
+  由于LED闪烁的周期是500ms，相对于仿真器来说太过漫长，英雌仿真时可以缩小设计代码中的时间尺度，这里将led_twinkle.v中的计时器cnt最大计时值改为10，内容如下：
+```verilog
+`timescale 1ns / 1ps
+
+module led_twinkle(
+    input sys_clk,
+    input sys_rst_n,
+    output [1:0] led
+    );
+
+reg [25:0] cnt;
+
+//assign led = (cnt < 26'd2500_0000) ? 2'b01 : 2'b10;
+assign led = (cnt < 26'd5) ? 2'b01 : 2'b10;
+
+always@(posedge sys_clk or negedge sys_rst_n)
+begin
+    if(!sys_rst_n)
+        cnt <= 26'd0;
+//    else if(cnt < 26'd5000_0000)
+    else if(cnt < 26'd10)
+        cnt <= cnt + 1'b1;
+    else
+        cnt <= 26'd0;
+end
+endmodule
+```
+
+  点击Flow Navigator窗口SIMULATION下的Run Simulation，接着点击Run Behavioral Simulation进入仿真界面。
+![Behavioral Simulation](pic/Behavioral Simulation.PNG)
+
+  包括以下几个子窗口：
+|子窗口|说明|
+|---|---|
+|Scope窗口|Scope（范围）窗口显示了设计层次结构，当选择了一个作用域时，该作用域内的所有HDL对象，包括reg、wire等都会出现在Objects窗口中，可以在Objects窗口中选择HDL对象，并将它们添加到波形窗口中。|
+|Objects窗口|以上图为例，在Scope窗口中选择了u_led_twinkle，在Objects窗口中会自动显示出led_twinkle模块中的所有对象，除了顶层端口sys_clk、sys_rst_n、led之外，还包括在内部定义的计数器cnt。|
+|波形窗口|用于显示观察所要观察信号的波形，在Objects窗口中选中一个或多个HDL对象如cnt，右键选择”Add to Wave Window“，添加到波形窗口中。|
+|仿真工具栏|包含运行各个仿真动作的命令按钮|
+
+  配置完后需要将波形配置信息保存下来，以便下次打开仿真器时继续使用该配置。点击波形窗口左上角的保存按钮，弹出Save Waveform对话框，默认将配置文件保存到当前工程目录，名称为tb_led_twinkle_behav.wcfg（.wcfg只包含波形窗口的配置信息，不包含波形的数据文件，后者将被存储在另外的文件中），直接点击Save。
+![Save Waveform](pic/Save Waveform.PNG)
+
+  之后会弹出一个消息框，是否将刚刚创建的波形配置信息文件添加到当前工程中，点击Yes。可以在Sources-->Simulation Sources-->sim_1-->Waveform Configuration File下看到该文件。
+![Waveform Configuration File](pic/Waveform Configuration File.PNG)
+
+  仿真状态下的工具栏如下：
+![Behavioral Simulation Toolbar](pic/Behavioral Simulation Toolbar.PNG)
+
+|工具|说明|
+|---|---|
+|Restart|将仿真时间重置为0，此时波形窗口中原有的波形都会被清除。下次执行仿真时，会从0时刻重新开始。|
+|Run all|运行仿真，直到完成所有事件或遇到HDL语句中的$stop或$finish命令为止，当设计比较复杂，且没有在Test Bench中加入前面两条命令时，不要轻易点击该按钮，否则仿真器会耗费大量的CPU和内存资源，可能造成电脑卡顿或死机。|
+|Run For|运行特定一段时间，时间长度和单位由右侧的两个编辑框指定，默认为10us。|
+|Step|单步运行仿真，每一步仿真一个HDL语句。|
+|Break|暂停当前仿真|
+|Relaunch|便于修改HDL源代码后，重新编译仿真源并重新启动仿真，不需要关闭并重新打开仿真器。|
+
+  刚打开仿真器时，仿真器会将Test Bench中信号加入到波形窗口中，并执行一段时间的仿真，时长由Settings窗口的Simulation页面的Simulation标签页下的xsim.simulate.runtime指定，默认为1000ns。
+![Simulation Runtime](pic/Simulation Runtime.PNG)
+
+  首先点击Restart按钮将仿真时刻重置为0，此时波形窗口的当前仿真时刻点（黄色标尺）就会回归到0ps，且原先的所有波形都被清除。
+  接着点击Run For按钮仿真10us，此时波形窗口口出现了波形，点击波形窗口工具栏中的Zoom Fit按钮，使波形自动缩放到整个窗口，按住Ctrl键并滚动鼠标滚轮可以放大/缩小波形，还可以拖动下方的滚动条查看各个时间的波形。
+  cnt信号默认显示为16进制，右键并选择Radix-->Unsigned Decimal，设置为10进制。
+  仿真波形如下，可以看到cnt每计数到4和10，两个led的电平状态就切换依次，说明HDL设计达到了预期的功能。
+![led_twinkle simulation waveform](pic/led_twinkle simulation waveform.PNG)
+
+  仿真结束后，右键Flow Navigation-->SIMULATION选择Close Sumulation来关闭仿真界面，在弹出的确认窗口中点击OK即可。
+
+##### 时序仿真
+  略
 
 ### HLS开发
 
@@ -2832,6 +3098,96 @@ clean:
 ```
 
 * 使用git管理仓库
+  Vivado工程的.gitignore配置如下：
+```GIT
+#########################################################################################################
+##	This is an example .gitignore file for Vivado, please treat it as an example as
+##	it might not be complete. In addition, XAPP 1165 should be followed.
+#########################################################################################################
+#########
+#Exclude all
+#########
+*
+!*/
+!.gitignore
+###########################################################################
+##	VIVADO
+###########################################################################
+#########
+#Source files:
+#########
+#Do NOT ignore VHDL, Verilog, block diagrams or EDIF files.
+!*.vhd
+!*.v
+!*.bd
+!*.edif
+#########
+#IP files
+#########
+#.xci: synthesis and implemented not possible - you need to return back to the previous version to generate output products
+#.xci + .dcp: implementation possible but not re-synthesis
+#*.xci(www.spiritconsortium.org)
+!*.xci
+#*.dcp(checkpoint files)
+!*.dcp
+!*.vds
+!*.pb
+#All bd comments and layout coordinates are stored within .ui
+!*.ui
+!*.ooc
+#########
+#System Generator
+#########
+!*.mdl
+!*.slx
+!*.bxml
+#########
+#Simulation logic analyzer
+#########
+!*.wcfg
+!*.coe
+#########
+#MIG
+#########
+!*.prj
+!*.mem
+#########
+#Project files
+#########
+#XPR  +  *.XML ? XPR (Files are merged into a single XPR file for 2014.1 version)
+#Do NOT ignore *.xpr files
+!*.xpr
+#Include *.xml files for 2013.4 or earlier version
+!*.xml
+#########
+#Constraint files
+#########
+#Do NOT ignore *.xdc files
+!*.xdc
+#########
+#TCL - files
+#########
+!*.tcl
+#########
+#Journal - files
+#########
+!*.jou
+#########
+#Reports
+#########
+!*.rpt
+!*.txt
+!*.vdi
+#########
+#C-files
+#########
+!*.c
+!*.h
+!*.elf
+!*.bmm
+!*.xmp
+```
+
   PetaLinux工程的.gitignore配置如下：
 ```GIT
 .petalinux
