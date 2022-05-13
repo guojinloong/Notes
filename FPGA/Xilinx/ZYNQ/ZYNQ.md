@@ -23,7 +23,7 @@
   包括256KB RAM（OCM）和128KB ROM（BootROM），OCM支持两个64位AXI从机接口，一个专用于通过APU SCU的CPU/ACP访问，另一个由PS和PL内其他所有的总线主机所共享；BootROM专用于引导过程，用户不可见。
 
 * AXI
-  高级可扩展接口（Advanced eXtendsible Interface，AXI）用于片内处理器和PFGA间的通信，使用AXI4协议，支持三种接口。
+  高级可扩展接口（Advanced eXtendsible Interface，AXI）用于片内处理器和FPGA间的通信，使用AXI4协议，支持三种接口。
 |类型|说明|
 |---|---|
 |AXI4|用于处理器访问存储器等需要指定地址的高速数据传输场景|
@@ -35,7 +35,7 @@
 |---|---|
 |M_AXI_GP0~1|通用AXI（General Purpose，GP）是32位数据总线，适合PS和PL之间的中低速通信，是透传不带缓冲的。PS作为主机。|
 |S_AXI_GP0~1|同上，PL作为主机。|
-|S_AXI_ACP|加速器一致性个端口（Accelerator Coherency Port，ACP）是64位总线，用来实现APU Cache和PL单元之间的一致性。PL作为主机。|
+|S_AXI_ACP|加速器一致性端口（Accelerator Coherency Port，ACP）是64位总线，用来实现APU Cache和PL单元之间的一致性。PL作为主机。|
 |S_AXI_HP0~3|高性能端口（High Performance Port，HP）是32位或64位数据总线，带有FIFO缓冲来提供批量读写操作，并支持PS和PL中存储器单元的高速通信。PL作为主机。|
 
 ### IO
@@ -126,10 +126,10 @@ cd /tools/Xilinx/.xinstall/Vitis_2020.1
 ### PetaLinux
   PetaLinux工具是一个包含了u-boot、linux kernel、device tree、rootfs等源码和库以及Yocto recipes的嵌入式Linux开发套件，可以方便地生成、配置、编译集自定义Linux系统，大大简化了Linux系统的开发工作。
 
-### 下载
+#### 下载
   进入[Xilinx](https://www.xilinx.com/)官网，按照Products-->Embedded Development-->Embedded Software & Ecosystem导航到Embedded Software Infrastructure页面，点击PetaLinux按钮进入PetaLinux Tools页面，点击Download & Licensing-->Download PetaLinux进入[下载](https://www.xilinx.com/support/download/index.html/content/xilinx/en/downloadNav/embedded-design-tools.html)页面，找到合适版本的安装包下载（本文以 PetaLinux 2020.1为例）。
 
-### 安装
+#### 安装
   在安装PetaLinux之前需要先安装一些必要的运行软件和依赖库。
 ```shell
 sudo apt-get install gawk build-essential net-tools xterm autoconf libtool zlib1g-dev gcc-multilib texinfo libncurses5-dev zlib1g:i386 tftpd-hpa
@@ -1669,7 +1669,7 @@ BRAM address is 2       , Read data is 3
   添加自定义的IP核PL_DDR3_TEST，双击打开配置参数如下：
 ![PL_DDR3_TEST Config](pic/PL_DDR3_TEST Config.PNG)
 
-  添加Utility Vecotr Logic核，双击打开配置为非门，位宽为1。
+  添加Utility Vector Logic核，双击打开配置为非门，位宽为1。
 ![Utility Vecotr Logic axi4_ddr_rw](pic/Utility Vecotr Logic axi4_ddr_rw.PNG)
 
   点击Run Block Automation，然后点击Run Connection Automation，在弹出的对话框中勾选All Automation。手动连接Utility Vecotr Logic，并依此为op1[0:0]、m00_axi_txn_done和m00_axi_error添加外部端口key_init、compare_done和error_flag，设计框图如下：
@@ -2515,7 +2515,7 @@ A[BootROM]-->B[FSBL]
 4.开始执行裸机应用程序，或者SSBL。
 
   要重建一个ZYNQ启动镜像，需要以下文件：
-1.BootROM头文件：控制BootROM设置，比如究底执行、加密、FSBL偏移量、镜像大小等；
+1.BootROM头文件：控制BootROM设置，比如就地执行、加密、FSBL偏移量、镜像大小等；
 2.FSBL；
 3.配置PL的BIT文件；
 4.运行在PS上的应用程序。
@@ -2620,7 +2620,7 @@ petalinux-config --get-hw-description /home/ubuntu/xilinx/Project/zynq_petalinux
 ![u-boot Configuration](pic/u-boot Configuration.png)
 
 * Image Packaging Configuration
-  Root filesystem type设置根文件系统类型，选择INITRAMFS，可以选择SD/eMMC等。Copy final images to tftpboot选型，当在Ubuntu的根文件下创建一个名为tftpboot的文件夹时，工程生成镜像后会自动复制过去，这里去掉选项，否则最后容易失败。
+  Root filesystem type设置根文件系统类型，选择INITRAMFS，可以选择SD/eMMC等。Copy final images to tftpboot选项，当在Ubuntu的根文件下创建一个名为tftpboot的文件夹时，工程生成镜像后会自动复制过去，这里去掉选项，否则最后容易失败。
 ![Image Packaging Configuration](pic/Image Packaging Configuration.png)
 
 * Firmware Version Configuration
