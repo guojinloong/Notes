@@ -168,6 +168,25 @@ sudo rm -f /etc/udev/rules.d/52-xilinx-ftdi-usb.rules
 sudo rm -f /etc/udev/rules.d/52-xilinx-pcusb.rules
 ```
 
+### Tools
+#### XSCT
+  [Xilinx Software CommandLine Tool](https://docs.xilinx.com/v/u/en-US/ug1208-xsct-reference-guide)简称XSCT，可以用户烧写、调试、创建/构建项目等。
+  常用命令如下：
+|命令|说明|
+|---|---|
+|connect|连接仿真器|
+|targets|查看当前可用目标设备|
+|target \<device number\>|选择设备|
+|rst|复位设备|
+|dow \<\*.elf\>|下载FSBL.elf、u-boot.elf、User code等到DDR起始地址0x0|
+|dow -data \<file name\> addr|下载文件（BOOT.bin、kernel、设备树等）到DDR指定地址addr|
+|con|启动CPU|
+|stop|停止CPU|
+|rrd|读取CPU通用寄存器|
+|mrd \<reg addr\>|读取某个寄存器的值|
+|mrd \<OCM addr\> size|读取OCM起始地址为addr，大小为size的数据（通常由BootROM加载进去）|
+|disconnect|断开连接设备|
+
 开发
 ===
 FPGA
@@ -708,7 +727,7 @@ A[创建Vivado工程]-->B[使用IP Intergrator创建Processing System]-->C[生�
   点击Create Platform Project或菜单File-->New->Platform Project打开平台项目创建页面，可以从硬件描述文件（XSA）创建或从已有的平台导入。输入工程名称hello_world，点击Next。
 ![Create a New Platform Project](pic/Create a New Platform Project.PNG)
 
-  在Hardware Specification下点击Browse导入之前生成的XSA文件，在Software Specification下选择操作系统（standalone、freertos或linux），选择处理器（0或1）。
+  在Hardware Specification下点击Browse导入之前生成的XSA文件，在Software Specification下选择操作系统（standalone、freertos或linux），选择处理器（0或1），默认勾选了Generate boot componets，会自动包含fsbl源码，用于生成固化程序。
 ![Create a new platform from hardware(XSA)](pic/Create a new platform from hardware(XSA).PNG)
 
   点击Finish完成创建，点击工具栏锤子按钮编译工程。
@@ -1355,7 +1374,7 @@ int main(void)
 |8|DAT1|保留|
 
 ###### 硬件设计
-  参考嵌入式开发流程新建Vivado工程，名称为sd_txt，添加ZYNQ Processing System，配置UART0、SD0和DDR3。注意SD0引脚接在Bank1上，电源为1.8V，需要在MIO Configuration界面将Bank1的I/O电压改为LVCOMS 1.8V。同时勾选CD信号并将引脚分配至MIO10。
+  参考嵌入式开发流程新建Vivado工程，名称为sd_txt，添加ZYNQ Processing System，配置UART0、SD0和DDR3。注意SD0引脚接在Bank1上，电源为1.8V，需要在MIO Configuration界面将Bank1的I/O电压改为LVCOMS 1.8V。同时勾选CD信号并将引脚分配至MIO10（也可以不选，但选择后必须保证CD有效，否则检测不到SD卡），也可以分配到EMIO（导出XSA时必须包含bitstream）。
 ![ZYNQ7 Processing System Peripheral IO Pins SD_TXT](pic/ZYNQ7 Processing System Peripheral IO Pins SD_TXT.png)
 ![ZYNQ7 Processing System MIO Configuration SD_TXT](pic/ZYNQ7 Processing System MIO Configuration SD_TXT.PNG)
 
@@ -2511,7 +2530,7 @@ A[BootROM]-->B[FSBL]
   FSBL（First-Stage Boot Loader）可以配置DDR存储器和硬件设计过程中定义的一些外设，需要在加载软件应用及配置PL之前就初始化完毕。
 1.初始化PS；
 2.如果提供了BIT文件，则配置PL，通过处理器配置访问接口（Processor Configuration Access Port，PCAP）进行，可以对PL进行部分配置或者完全配置。一旦PS启动运行后，可以在任意时刻配置PL，FSBL和应用程序可以清除、配置以及使能PL；
-3.加载裸机应用程序到DDR，或者加载SSBL（Second-Stage Boot Loader）；
+3.加载裸机应用程序到DDR，或者加载SSBL（Second-Stage Boot Loader，如u-boot）；
 4.开始执行裸机应用程序，或者SSBL。
 
   要重建一个ZYNQ启动镜像，需要以下文件：
@@ -2533,6 +2552,14 @@ A[BootROM]-->B[FSBL]
   点击Flow Navigator窗口PROGRAM AND DEBUG下的Generate Bitstream，对设计进行综合、实现并生成Bitstream文件。
   点击菜单File-->Export-->Export Hardware，勾选Include bitstream，生成硬件平台文件gpio_wrapper.xsa。
   打开Vitis工程，右键平台项目选择Update Hardware Specification，在弹出的对话框中选择刚刚生成的gpio_wrapper.xsa，完成后参考SD示例添加xilffs库，编译。
+
+###### Generate boot componets
+  在创建平台项目时，如果勾选了Generate boot componets，会自动创建zynq_fsbl域，可以在platform.spr中修改其配置。工程内会自动包含FSBL源码，可以在zynq_fsbl文件夹下查看并修改。
+  编译平台项目时，会在export文件夹下生成平台文件.xpfm，以及hw和sw两个文件夹，其中hw下包含.xsa文件，sw下包含生成的库和头文件（由APP调用，分别在bsplib和bspinclude下），以及fsbl.elf（在boot下）。
+  编译app_system工程时，会自动生成.bif文件（在app_system/Debug/下），并使用之前生成的fsbl.elf和.bit文件生成BOOT.BIN（在app_system/Debug/sd_card下）。
+
+###### 自定义FSBL
+  如果需要调试FSBL或添加自定义功能，可以手动创建FSBL工程。
   点击菜单栏File-->New-->Application Project，新建FSBL工程，最后的模板选择Zynq FSBL，点击Finish完成，编译生成FSBL.elf文件。
   点击菜单栏Xilinx-->Create Boot Image，在弹出的窗口中设置输出文件路径，output.bif是Boot Image配置文件，BOOT.bin是启动文件。
   接着点击Boot image partitions右侧的Add按钮，在弹出的窗口添加之前生成的FSBL.elf文件，Partition type选择bootloader，点击OK。
@@ -2558,20 +2585,24 @@ A[BootROM]-->B[FSBL]
 
 ### Linux开发
   使用PetaLinux设计流程如下：
+![PetaLinux Design Steps](pic/PetaLinux Design Steps.png)
+
+  常用的PetaLinux命令有：
 |步骤|工具/命令|
 |---|---|
-|Vivado|创建硬件平台，生成XSA文件|
-|petalinux-create -t project|创建PetaLinux工程|
+|petalinux-create -t project --template zynq -n \<project_name\>|创建PetaLinux工程|
 |petalinux-create -t COMPONENT|创建用户器件|
-|petalinux-config|配置系统层选项|
-|petalinux-config --get-hw-description|导入XSA文件并配置PetaLinux工程|
+|petalinux-config --get-hw-description|导入Vivado生成的硬件平台XSA文件并配置PetaLinux工程|
+|petalinux-config|导入过XSA且不需要更新时修改PetaLinux配置|
+|petalinux-config -c -boot|配置u-boot|
 |petalinux-config -c kernel|配置Linux内核|
+|petalinux-config -c device-tree|配置Linux设备树|
 |petalinux-config -c rootfs|配置Linux根文件系统|
 |petalinux-build|编译整个工程|
+|petalinux-build -c device-tree|编译设备树|
+|petalinux-build -c device-tree -x clensstate|如果不是第一次编译，需要先清理，然后再执行上一条命令编译设备树|
 |petalinux-package --boot|制作BOOT.BIN启动文件|
 |petalinux-boot|启动系统以测试|
-
-![PetaLinux Design Steps](pic/PetaLinux Design Steps.png)
 
 #### 使用PetaLinux定制系统
 ##### 使用Vivado创建硬件平台
@@ -2673,7 +2704,8 @@ petalinux-config -c rootfs
 ![rootfs configuration](pic/rootfs configuration.png)
 
 ###### 配置设备树文件
-  打开project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi文件，添加各种设备配置信息。
+  软件自动在components/plnx_workspace/device-tree/device-tree/下生成了默认的设备树，用户不需要修改，其中system-top.dts是顶层设备树（包含了zynq-7000.dtsi、pl.dtsi、pcw.dtsi和system-user.dtsi以及一些基础硬件信息），zynq-7000.dtsi是根据硬件平台文件XSA自动配置的设备树（包含了大部分设备信息），pl.dtsi是与pl相关的设备树，pcw.dtsi（TODO）。
+  在project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi是用户设备树，可以自定义一些设备，如果重复定义了设备将会覆盖默认的配置。打开该文件，添加如下配置信息。
 ```c
 /include/ "system-conf.dtsi"
 
@@ -3066,7 +3098,8 @@ sudo umount /dev/sdb*
 
 问题
 ===
-* Vitis平台项目编译自定义IP核出错，修改IP核源码中的makefile文件，重新生成xsa文件并更新平台项目。
+#### Vitis平台项目编译自定义IP核出错
+  修改IP核源码中的makefile文件，重新生成xsa文件并更新平台项目。
 ```C
 COMPILER=
 ARCHIVER=
@@ -3097,7 +3130,8 @@ clean:
 	rm -rf ${OBJECTS} ${ASSEMBLY_OBJECTS}
 ```
 
-* 使用git管理仓库
+#### 使用git管理仓库
+##### Vivado
   Vivado工程的.gitignore配置如下：
 ```GIT
 #########################################################################################################
@@ -3188,6 +3222,7 @@ clean:
 !*.xmp
 ```
 
+##### PetaLinux
   PetaLinux工程的.gitignore配置如下：
 ```GIT
 .petalinux
@@ -3204,9 +3239,78 @@ components/yocto/
 *.jou
 ```
 
+#### 未分配引脚报错
+  生产比特流文件时报错，如下图所示；
+![Unconstrained Logical Port](pic/Unconstrained Logical Port.PNG)
+
+  在XDC约束文件中添加以下几行即可。
+```xdc
+set_property SEVERITY {Warning} [get_drc_checks NSTD-1]
+set_property SEVERITY {Warning} [get_drc_checks RTSTAT-1]
+set_property SEVERITY {Warning} [get_drc_checks UCIO-1]
+```
+
+#### 修改标准输入/输出设备
+  双击打开BSP工程下的platform.spr，选中Borad Support Package，点击Modify BSP Settings打开Board Support Package Settings界面；选中standalone，修改stdin和stdout的Value值为目标设备。
+![Board Support Package Settings stdin stdout](pic/Board Support Package Settings stdin stdout.PNG)
+
+  点击OK，重新编译所有工程，修改生效。
+  如果目标设备为串口，可使用print、xil_printf或printf打印调试信息到目标串口。在xparameter.h中定义了STDIN和STDOUT的地址，以及两个串口，代码如下。
+```C
+#define STDIN_BASEADDRESS 0xE0000000
+#define STDOUT_BASEADDRESS 0xE0000000
+
+/* Definitions for driver UARTPS */
+#define XPAR_XUARTPS_NUM_INSTANCES 2
+
+/* Definitions for peripheral PS7_UART_0 */
+#define XPAR_PS7_UART_0_DEVICE_ID 0
+#define XPAR_PS7_UART_0_BASEADDR 0xE0000000
+#define XPAR_PS7_UART_0_HIGHADDR 0xE0000FFF
+#define XPAR_PS7_UART_0_UART_CLK_FREQ_HZ 100000000
+#define XPAR_PS7_UART_0_HAS_MODEM 0
+
+
+/* Definitions for peripheral PS7_UART_1 */
+#define XPAR_PS7_UART_1_DEVICE_ID 1
+#define XPAR_PS7_UART_1_BASEADDR 0xE0001000
+#define XPAR_PS7_UART_1_HIGHADDR 0xE0001FFF
+#define XPAR_PS7_UART_1_UART_CLK_FREQ_HZ 100000000
+#define XPAR_PS7_UART_1_HAS_MODEM 0
+```
+
+  可以看到当前的标准输入/输出地址为PS7_UART_0，也可以手动修改为PS7_UART_1。事实上，在Board Support Package Settings界面中修改后，STDIN_BASEADDRESS和STDOUT_BASEADDRESS的值也会自动同步更新（推荐）。
+
+#### 打开FSBL调试模式
+  ZYNQ的启动过程参考[Zynq-7000 SoC Technical Reference Manual(UG585)](https://docs.xilinx.com/v/u/en-US/ug585-Zynq-7000-TRM)的6: Boot and Configuration，如果启动失败，可以打开FSBL调试模式。
+##### Vitis
+  在FSBL工程的src/fsbl_debug.h中或工程配置信息中添加FSBL_DEBUG_INFO宏定义，即可打开FSBL的所有调试信息。
+
+##### PetaLinux
+  在project-spec/meta-user/recipes-bsp/下新建fsbl文件夹，然后新建fsbl\_%.bbappend文件，输入以下内容，重新编译。
+```shell
+#Enable appropriate FSBL debug flags
+YAML_COMPILER_FLAGS_append = " -DFSBL_DEBUG_INFO"
+```
+
+#### 获取CPU时间
+```C
+#define REFACTOR_TO_US                  (2000000.0f / XPAR_CPU_CORTEXA9_CORE_CLOCK_FREQ_HZ)
+
+XTime current_time;
+
+XTime_GetTime(&current_time);
+current_time *= REFACTOR_TO_US; // Convert to us
+```
+
 参考
 ===
 * [[Vivado 2020.1]ZYNQ7020折腾之路(一)之荔枝糖Hex入门输出“Hello,World!“](https://blog.csdn.net/qq_36229876/article/details/108054405)
 * [Drivers and Makefiles problems in Vitis 2020.2](https://support.xilinx.com/s/question/0D52E00006hpOx5SAE/drivers-and-makefiles-problems-in-vitis-20202?language=en_US)
 * [使用Petalinux定制Linux系统](https://www.cnblogs.com/Mike2019/p/14293018.html)
 * [ZYNQ #0 petalinux的使用与工程建立](https://blog.csdn.net/sements/article/details/88921275)
+* [XILINX 文档门户](https://docs.xilinx.com/home)
+* [Zynq的启动过程及加密](https://mbb.eet-china.com/forum/topic/74770_1_1.html)
+* [使用Xilinx XSCT工具进行烧录](https://blog.csdn.net/u013706212/article/details/120975147)
+* [xilinx zynq的fsbl阶段的调试](https://blog.csdn.net/suixintt/article/details/107211149?spm=1001.2014.3001.5506)
+* [ZYNQ开发系列——SDK输出串口选择以及打印函数print、printf、xil_printf的差别](https://blog.csdn.net/gzy0506/article/details/124085448)
