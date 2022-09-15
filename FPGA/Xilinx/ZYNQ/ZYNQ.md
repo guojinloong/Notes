@@ -403,7 +403,7 @@ set_property IOSTANDARD LVCMOS33 [get_ports sys_rst_n]
 #### 集成逻辑分析仪
   Vivado中有一个集成逻辑分析仪（Integrated Logic Analyzer，ILA），以IP核的形式加入到用户设计中。Vivado提供了三种具有不同集成层次的插入ILA方法，以满足不同用户的需求。
 1. HDL实例化调试探针流程：直接在HDL代码中例化一个ILA IP核。这是集成层次最高的方法，但灵活性较差，在调试完毕后，需要在HDL源码中删除ILA IP核。
-2. 网表插入调试探针流程：在综合后的网表中，分别标记要进行调试观察的各个信号，然后通过一个简单的”Setup Debug“向导来设置各个探针和ILA IP核的工作参数，然后工具会根据用户设置的参数，自动地生成各个ILA IP核。用户不需要修改HDL源码，并能单独控制每个ILA IP核以及每个探针，具有很大的灵活性。用户设置的调试信息会议Tcl XDC调试命令的形式保存到XDC约束文件中，在实现阶段，Vivado会读取这些XDC调试命令，并在布局布线时加入这些ILA IP核。在调试完毕后，用户可以自综合后的网表中删除ILA IP核，或者在XDC文件中删除调试命令。
+2. 网表插入调试探针流程：在综合后的网表中，分别标记要进行调试观察的各个信号，然后通过一个简单的”Setup Debug“向导来设置各个探针和ILA IP核的工作参数，然后工具会根据用户设置的参数，自动地生成各个ILA IP核。用户不需要修改HDL源码，并能单独控制每个ILA IP核以及每个探针，具有很大的灵活性。用户设置的调试信息会以Tcl XDC调试命令的形式保存到XDC约束文件中，在实现阶段，Vivado会读取这些XDC调试命令，并在布局布线时加入这些ILA IP核。在调试完毕后，用户可以自综合后的网表中删除ILA IP核，或者在XDC文件中删除调试命令。
 3. 手动在XDC约束文件中书写对应的Tcl XDC调试命令，之后同上。这种方法集成层次最低，一般不会使用。
 
 ##### HDL实例化调试探针流程
@@ -446,6 +446,7 @@ ila_0 u_ila_0 (
 一. 在综合后的网表中手动选择网络并点击”mark_debug“按钮，将要进行调试观察的各个信号标记”mark_debug“属性，然后通过”Setup Debug“向导来设置ILA IP核的参数，最后工具会根据参数来自动创建ILA IP核。
 二. 在综合前在HDL代码中为想要观察的reg或wire信号添加”Mark Debug“综合属性，紧挨在变量声明的前面使用”(\* mark_debug = "true" \*)“标记，这些信号不会被工具优化掉。
   若使用第二种方法添加”Mark Debug“属性，则修改代码如下：
+
 ```verilog
 module led_twinkle(
     input sys_clk,
@@ -459,7 +460,7 @@ module led_twinkle(
   点击Flow Navigation-->SYNTHESIS-->Run Synthesis进行综合，完成后点击Open Synthesized Design打开综合后的设计窗口，点击右上角的窗口布局选择器，选择“Debug”窗口布局。此时，Vivado打开了Netlist子窗口、Schematic子窗口以及Debug子窗口，如下图所示：
 ![Synthesized Design ILA](pic/Synthesized Design ILA.PNG)
 
-  Netlist子窗口和Schematic子窗口都可以用于标记要进行观察的信号，Debug子窗口用于显示并设置ILA IP核的各个参数。在Debug子窗口中又包含Debug Cores核Debug Nets两个选项卡，用于显示所有标记为”Mark Debug“的信号。Debug Cores以ILA IP核为中心，所有标记为”Mark Debug“的信号并且已经被分配到ILA探针的信号都会被显示在各个ILA IP核的视图树下，否则显示在Unassigned Debug Nets下。Debug Nets不显示ILA IP核，所有标记为”Mark Debug“的信号并且已经被分配到ILA探针的信号都会被显示Assigned Nets下，否则显示在Unassigned Debug Nets下。在HDL代码中已经添加了”Mark Debug“属性的信号会自动出现在Unassigned Debug Nets下。
+  Netlist子窗口和Schematic子窗口都可以用于标记要进行观察的信号，Debug子窗口用于显示并设置ILA IP核的各个参数。在Debug子窗口中又包含Debug Cores和Debug Nets两个选项卡，用于显示所有标记为”Mark Debug“的信号。Debug Cores以ILA IP核为中心，所有标记为”Mark Debug“的信号并且已经被分配到ILA探针的信号都会被显示在各个ILA IP核的视图树下，否则显示在Unassigned Debug Nets下。Debug Nets不显示ILA IP核，所有标记为”Mark Debug“的信号并且已经被分配到ILA探针的信号都会被显示Assigned Nets下，否则显示在Unassigned Debug Nets下。在HDL代码中已经添加了”Mark Debug“属性的信号会自动出现在Unassigned Debug Nets下。
 
   若之前没有使用第二种方法添加”Mark Debug“属性，则需要手动标记要进行观察的信号。在Netlists子窗口或Schematic子窗口中，右键要添加标记的网络（此时另一个子窗口中也会自动选中此网络）并选择Mark Debug（或Unmark Debug取消标记），如下图所示：
 ![Mark Debug ILA](pic/Mark Debug ILA.png)
@@ -488,7 +489,7 @@ module led_twinkle(
   打开led_twinkle.xdc，可以看到增加了一些用于debug的约束命令。接下来就可以实现设计，Vivado会读取这些约束，并按照这些命令的参数来自动加入ILA IP核。最后生成比特流，下载并观察信号。
 ![led_twinkle.xdc ILA](pic/led_twinkle.xdc ILA.PNG)
 
-  调试完毕后，可以删除led_twinkle.v源代码中信号的Mark Debug属性核XDC文件中包含的Tcl调试命令。
+  调试完毕后，可以删除led_twinkle.v源代码中信号的Mark Debug属性和XDC文件中包含的Tcl调试命令。
 
 #### 仿真
   根据下图所示的FPGA设计流程，在设计输入之后、设计综合之前进行RTL仿真，成为综合前仿真，也称为前仿真或功能仿真，主要验证电路的功能是否符合设计要求，不考虑电路门延迟和线延迟。在完成设计代码编写后，直接对HDL代码进行仿真，检测源代码是否符合功能要求，可以比较直观的观察波形的变化，在设计的最初阶段发现问题。
@@ -1264,6 +1265,7 @@ void timer_intr_handler(void *callback_ref)
 }
 ```
 
+##### TTC
 ##### XADC
   ZYNQ PL端有一个数模混合模块XADC，包含两个12位ADC（转换速率可以达到1MSPS）、一个模拟多路复用器（支持最多17路外部模拟输入信号的测量，且支持单极、双极和差分等信号类型）、片上温度和电压传感器（可以测量芯片工作时的温度和供电电压）。XADC提供了多种接口供外部模块访问，PL中有JTAG和DRP（Dynamic Reconfiguration Port）接口，PS中有PS-XADC接口（同PL-JTAG一样使用串行路径，速度慢，但不需要对PL编程）或通过M_AXI_GP接口（使用DRP的并行路径，速度快，但需要在PL中调用AXI XADC IP核）。PL-JTAG和PS-XADC不能同时使用，但它们都可以和DRP接口并用。
 ![XADC Module System Viewpoint](pic/XADC Module System Viewpoint.PNG)
@@ -2322,7 +2324,7 @@ set_property PACKAGE_PIN L14 [get_ports TMDS_0_tmds_clk_p]
 ##### FreeRTOS
 
 ##### LwIP
-  PS拥有两个千兆以太网控制器（GEM），实现了标准10/100/1000Mb/s以太网MAC，使用MDIO接口管理PHY芯片，通过MIO连接到PS端的PHY芯片时使用GMII接口，通过EMIO连接到PL端的PHY芯片时使用RGMII接口。
+  PS拥有两个千兆以太网控制器（GEM），实现了标准10/100/1000Mb/s以太网MAC，使用MDIO接口管理PHY芯片，通过MIO连接到PS端的PHY芯片时使用RGMII接口，通过EMIO连接到PL端的PHY芯片时使用GMII接口。
 
 ###### 硬件设计
   参考嵌入式开发流程新建Vivado工程，名称为lwip，添加ZYNQ Processing System，配置DDR3、UART和ENET，移除PL部分接口，点击OK完成。
@@ -2341,14 +2343,14 @@ set_property PACKAGE_PIN L14 [get_ports TMDS_0_tmds_clk_p]
   编译、下载、调试，使用TCP客户端向开发板发送信息，开发板将原封不动发送回去。
 
 ##### 自定义IP核
-  IP核的接口（Interface）一个或多个端口（Ports）组成，不同类型的信号需要不同的接口。
+  IP核的接口（Interface）由一个或多个端口（Ports）组成，不同类型的信号需要不同的接口。
   在主页Tasks下点击Manage IP-->New IP Location或菜单栏File-->IP-->New Location，在弹出的窗口点击Next，设置工程路径，其他先不管。
 ![New IP Location](pic/New IP Location.PNG)
 
   点击FInish完成，打开工程管理界面。
 ![IP Project Manager](pic/IP Project Manager.PNG)
 
-  点击菜单栏Tools-->Create and Package New IP打开创建的封装IP向导，点击Next。接下来可以选择封装IP或者创建一个带AXI4接口的IP核。
+  点击菜单栏Tools-->Create and Package New IP打开创建和封装新IP向导，点击Next。接下来可以选择封装IP或者创建一个带AXI4接口的IP核。
 ![Create a new AXI4 peripheral](pic/Create a new AXI4 peripheral.PNG)
 
 ###### 封装IP
@@ -2376,7 +2378,7 @@ set_property PACKAGE_PIN L14 [get_ports TMDS_0_tmds_clk_p]
   由于最开始错误地识别了顶层模块，多出了reset和paralell_clk，右键选择Remove Interface移除，此时左侧红色感叹号变成黄色。另外工具错误地将tmds_clk_n和tmds_clk_p识别成了两个时钟接口，需要移除，此时左侧黄色感叹号也消失了。
 ![Ports and Interfaces new DVI_TX](pic/Ports and Interfaces new DVI_TX.PNG)
 
-  右键pclk选择Add Bus Interface，弹出Add Interface窗口，点击General页面Interface Definition右侧...按钮，搜索clock，选中Signal下的clock_ctrl，点击OK。
+  右键pclk选择Add Bus Interface，弹出Add Interface窗口，点击General页面Interface Definition右侧...按钮，搜索clock，选中Signal下的clock_rtl，点击OK。
 ![Interface Definition Chooser DVI_TX](pic/Interface Definition Chooser DVI_TX.PNG)
 
   设置接口名称为pclk，模式为slave，表示输入信号。
@@ -2605,16 +2607,13 @@ A[BootROM]-->B[FSBL]
 |petalinux-boot|启动系统以测试|
 
 #### 使用PetaLinux定制系统
-##### 使用Vivado创建硬件平台
-##### 使用PetaLinux创建系统工程
-###### 创建PetaLinux工程
+##### 创建PetaLinux工程
   创建PetaLinux工程zynq_petalinux，-t指定创建类型为project，--template指定平台模板为zynq，-n指定工程名称。
 ```shell
-mkdir zynq_petalinux
 petalinux-create -t project --template zynq -n zynq_petalinux
 ```
 
-###### 配置PetaLinux工程
+##### 配置PetaLinux工程
   首次配置PetaLinux工程时或硬件改动后，需要导入XSA文件，--get-hw_description指定XSA文件所在位置。后面想要重新配置，只需输入petalinux-config即可。
 ```shell
 cd zynq_petalinux
@@ -2687,7 +2686,7 @@ wget -c -r -np -nH -R index.html -P /home/ubuntu/xilinx/Project/zynq_petalinux/p
 
   设置完成后保存退出，PetaLinux会根据Auto Config Settings和Subsystem AUTO Hardware Settings来解析硬件描述文件，以获取更新设备树、u-boot配置文件和内核配置文件所需的硬件信息。
 
-###### 配置Linux内核
+##### 配置Linux内核
 ```shell
 petalinux-config -c kernel
 ```
@@ -2695,7 +2694,7 @@ petalinux-config -c kernel
   等待一段时间后，弹出Linux内核配置界面，保持默认，直接保存退出。
 ![Kernel Configuration](pic/Kernel Configuration.png)
 
-###### 配置Linux根文件系统
+##### 配置Linux根文件系统
 ```shell
 petalinux-config -c rootfs
 ```
@@ -2703,9 +2702,10 @@ petalinux-config -c rootfs
   弹出根文件系统配置界面，PetaLinux RootFS Settings可以用来设置root用户密码，默认为root。
 ![rootfs configuration](pic/rootfs configuration.png)
 
-###### 配置设备树文件
-  软件自动在components/plnx_workspace/device-tree/device-tree/下生成了默认的设备树，用户不需要修改，其中system-top.dts是顶层设备树（包含了zynq-7000.dtsi、pl.dtsi、pcw.dtsi和system-user.dtsi以及一些基础硬件信息），zynq-7000.dtsi是根据硬件平台文件XSA自动配置的设备树（包含了大部分设备信息），pl.dtsi是与pl相关的设备树，pcw.dtsi（TODO）。
-  在project-spec/meta-user/recipes-bsp/device-tree/files/system-user.dtsi是用户设备树，可以自定义一些设备，如果重复定义了设备将会覆盖默认的配置。打开该文件，添加如下配置信息。
+##### 配置设备树文件
+  软件自动在components/plnx_workspace/device-tree/device-tree/下生成了默认的设备树，用户不需要修改，其中system-top.dts是顶层设备树（包含了zynq-7000.dtsi、pl.dtsi、pcw.dtsi和system-user.dtsi以及一些基础硬件信息），zynq-7000.dtsi包含了一些设备的默认配置信息（不允许修改），pl.dtsi是与pl相关的设备树，pcw.dtsi（TODO）。
+  system-user.dtsi是用户设备树，在project-spec/meta-user/recipes-bsp/device-tree/files/下，可以自定义一些设备，如果重复定义了设备将会覆盖默认的配置。打开该文件，添加如下配置信息。
+
 ```c
 /include/ "system-conf.dtsi"
 
@@ -2828,7 +2828,7 @@ petalinux-config -c rootfs
 };
 ```
 
-###### 编译PetaLinux工程
+##### 编译PetaLinux工程
   编译整个PetaLinux工程，生成设备树DTB文件、FSBL文件、u-boot、kernel、启动脚本和根文件系统映像（images目录下）。
 ```shell
 petalinux-build
@@ -2857,7 +2857,7 @@ INFO: copy to TFTP-boot directory is not enabled !!
 
 ![petalinux-build files](pic/petalinux-build files.png)
 
-###### 制作BOOT.BIN启动文件
+##### 制作BOOT.BIN启动文件
   ZYNQ的启动文件BOOT.BIN一般包含FSBL文件、bitstream文件和u-boot文件。
 ```shell
 petalinux-package --boot --fsbl ./images/linux/zynq_fsbl.elf --fpga --u-boot --force
@@ -2880,7 +2880,7 @@ INFO: Generating Zynq binary package BOOT.BIN...
 INFO: Binary is ready.
 ```
 
-###### 制作SD启动卡
+##### 制作SD启动卡
   使用fdisk命令为SD卡创建分区，第一个分区为FAT32格式，大小为500M，设为引导分区；剩下的空间作为第二分区，ext4格式。
 ```shell
 sudo fdisk /dev/sdb
@@ -2970,7 +2970,7 @@ sudo mkfs.ext4 -L rootfs /dev/sdb2
 
   挂载分区，并拷贝boot.scr、BOOT.BIN和image.ub到BOOT分区。
 
-###### 启动测试
+##### 启动测试
 * QEMU模拟启动
   首先使用petalinux-package命令打包预编译镜像。
 ```shell
@@ -2998,6 +2998,99 @@ PetaLinux 2020.1 zynq_petalinux /dev/ttyPS0
 zynq_petalinux login:
 ```
 
+#### Linux系统移植
+  一个完整的Linux系统包含U-Boot、kernel和rootfs，使用PetaLinux搭建Linux系统时，隐藏了很多细节，不利于学习，还需要手动移植，才能更好地理解Linux系统的工作原理。
+
+##### U-Boot移植
+  参考笔记[U-Boot](../../../U-Boot/U-Boot.md)，学习相关知识。
+  半导体厂商[Xilinx](https://github.com/Xilinx)提供了[u-boot-xlnx](https://github.com/Xilinx/u-boot-xlnx)，在U-Boot官方源码的基础上，添加对其芯片的支持并维护（最好使用与PetaLinux对应的版本，否则可能出现一些问题，本文使用u-boot-xlnx-xilinx-v2020.1版本）。
+  开发板厂商[正点原子](https://gitee.com/greatdream)提供了[ZYNQ-uboot](https://gitee.com/greatdream/uboot.git)，在Xilinx的基础上，对其开发板进行了适配，如显示驱动。
+  PetaLinux默认使用官方U-Boot源码（u-boot-xlnx），可以在Linux Componets Selection下改为remote或ext-local-src。
+![PetaLinux U-Boot Source Selection](pic/PetaLinux U-Boot Source Selection.png)
+
+**remote**
+  使用远程U-Boot git仓库的源码。
+  选择remote后，在Linux Componets Selection界面会出现一项Remote u-boot settings，内容如下：
+
+* Remote u-boot git URL
+  远程git仓库地址，格式如下：
+```shell
+git://github.com/Xilinx/u-boot-xlnx.git;protocol=https
+```
+
+  注意：URL前面的“https”要改成“git”，然后用“protocol=https”指定协议类型。
+
+* Remote u-boot git TAG/Commit ID
+  指定远程git仓库中的tag或Commit ID，必须设置为下面中的一个：
+
+1. 指向当前HEAD。
+```shell
+{$AUTOREV}
+```
+
+2. 指向某一tag。
+```shell
+tag/mytag
+```
+
+3. 指向某一commit id。
+```shell
+commit id sha key
+```
+
+* Remote u-boot git BRANCH
+  选择远程git仓库的分支。
+
+* Remote u-boot license checksum
+  设置远程git仓库的许可证信息（许可证文件为U-Boot源码根目录下的README，使用md5sum命令计算其md5值），如果没有编译时进行检查会报错，格式如下：
+```shell
+file://README;md5=caafa7f3ca54deaa3a087f3b5345ba8e
+```
+
+  最终设置如图所示：
+![Remote u-boot settings](pic/Remote u-boot settings.png)
+
+**ext-local-src**
+  使用本地的源码：首先下载U-Boot源码，然后在components下新建ext_sources文件夹，解压U-Boot源码到u-boot-xlnx-xilinx-v2020.1文件夹下。
+  选择ext-local-src后，在Linux Componets Selection界面会出现一项External  u-boot source settings，内容如下：
+
+* External u-boot local source path
+  指定本地U-Boot源码路径，必须使用绝对路径，否则会报错。也可以使用“${PROOT}”环境变量，表示当前工程路径，后面再加上相对工程内的路径，格式如下：
+```shell
+${PROOT}/components/ext_sources/u-boot-xlnx-xilinx-v2020.1
+```
+
+  最终设置如图所示：
+![External u-boot local source settings](pic/External u-boot local source settings.png)
+
+  执行“petalinux-build -c u-boot”编译，完成后会在images/linux目录下生成u-boot.elf文件。然后执行“petalinux-package --boot --fsbl --fpga --u-boot --force”将u-boot.elf打包到ZYNQ的启动文件BOOT.BIN中，将该文件拷贝到SD卡的第一个FAT32分区，插到开发板并从SD卡启动。
+
+**注：**
+
+* 编译时会在“build/tmp/work/zynq_generic-xilinx-linux-gnueabi/u-boot-xlnx/v2020.01-xilinx-v2020.1+git999-r0/u-boot-xlnx-v2020.01-xilinx-v2020.1+git999”目录下生成.config文件，是U-Boot最终的配置文件。
+
+##### Kernel移植
+  半导体厂商[Xilinx](https://github.com/Xilinx)提供了[linux-xlnx](https://github.com/Xilinx/linux-xlnx.git)，在Kernel官方源码的基础上，添加对其芯片的支持并维护（最好使用与PetaLinux对应的版本，否则可能出现一些问题，本文使用linux-xlnx-xilinx-v2020.1版本）。
+  开发板厂商[正点原子](https://gitee.com/greatdream)提供了[ZYNQ-linux](https://gitee.com/greatdream/linux.git)，在Xilinx的基础上，对其开发板进行了适配，如显示驱动。
+  PetaLinux默认使用官方Kernel源码（linux-xlnx），可以在Linux Componets Selection下改为remote或ext-local-src。
+  设置方法与U-Boot类似，只是最后设置内核许可证信息不同（许可证文件为内核源码根目录下的COPYING，使用md5sum命令计算其md5值），如果没有编译时进行检查会报错（do_populate_lic: QA Issue: linux-xlnx: The LIC_FILES_CHKSUM does not match），格式如下：
+
+```shell
+file://COPYING;md5=bbea815ee2795b2f4230826c0c6b8814
+```
+
+  最终设置如图所示：
+![Remote linux-kernel settings](pic/Remote linux-kernel settings.png)
+![External linux-kernel local source settings](pic/External linux-kernel local source settings.png)
+
+  修改了内核来源后，需要先清除之前的内核配置，默认的内核源码位于/home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/zynq_petalinux/components/yocto/workspace/sources/linux-xlnx，执行以下命令会清空所有源码。
+```shell
+petalinux-build -c linux-xlnx -x reset
+```
+![petalinux-config -c kernel](pic/petalinux-config -c kernel.png)
+
+#### Linux驱动开发
+
 #### 使用Vitis开发Linux应用
   创建平台项目zynq_petalinux_bsp，操作系统选择linux，点击Finish完成，编译。
 ![zynq_petalinux_bsp platform](pic/zynq_petalinux_bsp platform.png)
@@ -3013,17 +3106,8 @@ zynq_petalinux login:
 petalinux-config
 ```
 
-  修改Linux内核来源，可以选择remote并设置URL为远程仓库（[Xilinx](https://github.com/Xilinx)提供的[linux-xlnx](https://github.com/Xilinx/linux-xlnx.git)或[正点原子](https://gitee.com/greatdream)提供的[ZYNQ-linux](https://gitee.com/greatdream/linux.git)。也可以将源码下载到本地，然后选择ext-local-src并指定本地路径。另外需要设置内核许可证信息（许可证文件为内核源码根目录下的COPYING，使用md5sum命令计算其md5值），否则编译时进行检查会报错（do_populate_lic: QA Issue: linux-xlnx: The LIC_FILES_CHKSUM does not match），保存并退出。
-![External linux-kernel local source settings](pic/External linux-kernel local source settings.png)
-
-  修改u-boot来源，可以选择remote并设置URL为远程仓库（[Xilinx](https://github.com/Xilinx)提供的[u-boot-xlnx](https://github.com/Xilinx/u-boot-xlnx)或[正点原子](https://gitee.com/greatdream)提供的[ZYNQ-uboot](https://gitee.com/greatdream/uboot.git)）。也可以将源码下载到本地，然后选择ext-local-src并指定本地路径。另外还需要设置u-boot许可证信息（许可证文件为u-boot源码根目录下的README，使用md5sum命令计算其md5值），否则编译时进行检查会报错，保存并退出。
-![External u-boot local source settings](pic/External u-boot local source settings.png)
-
-  修改了内核来源后，需要先清除之前的内核配置，默认的内核源码位置位于/home/ubuntu/xilinx/Project/zynq_petalinux/petalinux/zynq_petalinux/components/yocto/workspace/sources/linux-xlnx，执行以下命令会清空所有源码。
-```shell
-petalinux-build -c linux-xlnx -x reset
-```
-![petalinux-config -c kernel](pic/petalinux-config -c kernel.png)
+  参考[U-Boot移植](# U-Boot移植)，使用原子提供的alientek-uboot-2018.01-xlnx-v2018.3。
+  参考[Kernel移植](# Kernel移植)，使用原子提供的alientek-linux-4.14.0-xlnx-v2018.3。
 
   重新配置内核，进入Device Drivers-->Graphics support菜单，选择显示驱动为原子提供的选项。
 ```shell
@@ -3032,7 +3116,7 @@ petalinux-config -c kernel
 ![Kernel Graphics support](pic/Kernel Graphics support.png)
 
   在开始编译之前，还需要做一些修改，防止出错：
-* 1. 在“/ project-spec/meta-user/recipes-kernel/linux/ linux-xlnx\_%.bbappend”文件内加入KERNEL_VERSION_SANITY_SKIP="1"，避免由于PetaLinux版本和内核版本不匹配而报错。
+* 1. 在“/ project-spec/meta-user/recipes-kernel/linux/linux-xlnx\_%.bbappend”文件内加入KERNEL_VERSION_SANITY_SKIP="1"，避免由于PetaLinux版本和内核版本不匹配而报错。
   注意：若petalinux-config--> DTG 配置保持默认的 template 选项，工具不会自动新建 project-spec/meta-user/recipes-kernel/linux 文件夹，我们需要手动创建 linux-xlnx\_%.bbappend文件并添加如下内容。
 ```shell
 FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
@@ -3310,7 +3394,10 @@ current_time *= REFACTOR_TO_US; // Convert to us
 * [使用Petalinux定制Linux系统](https://www.cnblogs.com/Mike2019/p/14293018.html)
 * [ZYNQ #0 petalinux的使用与工程建立](https://blog.csdn.net/sements/article/details/88921275)
 * [XILINX 文档门户](https://docs.xilinx.com/home)
+* [Xilinx Wiki](https://xilinx-wiki.atlassian.net/wiki/spaces/A/overview?homepageId=18844350)
 * [Zynq的启动过程及加密](https://mbb.eet-china.com/forum/topic/74770_1_1.html)
 * [使用Xilinx XSCT工具进行烧录](https://blog.csdn.net/u013706212/article/details/120975147)
 * [xilinx zynq的fsbl阶段的调试](https://blog.csdn.net/suixintt/article/details/107211149?spm=1001.2014.3001.5506)
 * [ZYNQ开发系列——SDK输出串口选择以及打印函数print、printf、xil_printf的差别](https://blog.csdn.net/gzy0506/article/details/124085448)
+* [zynq或zynqmp通过emio和gmii to rgmii ip使用pl端以太网调试](https://blog.csdn.net/weixin_43969075/article/details/119872875)
+* [ZYNQ+linux网口调试笔记（2）PS-GEM1](https://www.jianshu.com/p/60386d0fd521)
