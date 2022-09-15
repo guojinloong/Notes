@@ -1,0 +1,1 @@
+  LXC为Linux Container的简写。可以提供轻量级的虚拟化，以便隔离进程和资源。LXC在资源管理方面依赖于Linux内核的cgroups子系统，cgroups子系统是Linux内核提供的一个基于进程组的资源管理的框架，可以为特定的进程组限定可以使用的资源。LXC在隔离控制方面依赖于Linux内核的namespace特性，具体而言就是在clone时加入相应的flag（NEWNS NEWPID等等）。

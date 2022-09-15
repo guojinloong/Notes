@@ -1,5 +1,6 @@
-# 简介
-  ssh全称secure shell，基于网络（UDP）的安全加密的远程终端。分为客户端和服务端，通常使用openssh-client和openssh-server实现。
+简介
+===
+  SSH全称Secure Shell，基于网络（UDP）的安全加密的远程终端。
 ```shell
 #使用root用户登录远程IP为172.16.8.8的服务器
 ssh root@172.16.8.8
@@ -9,20 +10,23 @@ scp /root/main.c root@172.16.8.8:/root
 exit
 ```
 
-# 服务安装
+安装
+===
+## OpenSSH
+  OpenSSH包括客户端openssh-client和服务端openssh-server。
 ```shell
 #检查是否安装openssh-client和openssh-server服务
 sudo dpkg -l | grep ssh
 ```
 
-## openssh-client
+### openssh-client
   Ubuntu预装了openssh-client，也可以使用如下命令手动安装：
 ```shell
 #安装服务
 sudo apt install openssh-client
 ```
 
-## openssh-server
+### openssh-server
 ```shell
 #安装服务
 sudo apt install openssh-server
@@ -36,7 +40,11 @@ sudo /etc/init.d/ssh start
 sudo ps -e | grep sshd
 ```
 
-# 问题
+## Dropbear
+  Dropbear是一个轻量级SSH服务端与客户端，由Matt Johnston开发，与OpendSSH相比更简洁小巧，对于每个普通用户登录，OpenSSH会开两个sshd进程，而Dropbear只开一个进程，因此占用内存较小，在嵌入式系统中有望取代OpenSSH。
+
+问题
+===
 * 启动sshd服务时报错：sshd: no hostkeys available -- exiting.
   检查/etc/ssh目录下是否ssh_host_key、ssh_host_rsa_key、ssh_host_dsa_key，使用如下命令生成hostkey：
 ```shell
