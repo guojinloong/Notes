@@ -53,3 +53,7 @@ Icon=/opt/Typora-linux-x64/resources/assets/icon/icon_512x512.png
 ===
 * [linux下安装typora](https://www.jianshu.com/p/05546654685b)
 * [Linux安装及美化Typora详细步骤](https://blog.csdn.net/y_universe/article/details/107184300)
+* [markdown的标题设置自动添加序号](https://blog.csdn.net/jyn15159/article/details/122978472)
+* [为markdown目录标题添加序号](https://blog.csdn.net/weixin_44080380/article/details/120811270?spm=1001.2101.3001.6650.1&utm_medium=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1-120811270-blog-122978472.pc_relevant_paycolumn_v3&depth_1-utm_source=distribute.pc_relevant.none-task-blog-2%7Edefault%7ECTRLIST%7ERate-1-120811270-blog-122978472.pc_relevant_paycolumn_v3&utm_relevant_index=2)
+* [markdown 标题自动添加序号，添加目录](https://zhuanlan.zhihu.com/p/476091445)
+* [MarkDown公式指导手册](https://zhuanlan.zhihu.com/p/548594654?utm_id=0)
