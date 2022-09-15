@@ -31,6 +31,9 @@ cd /d D:\Software
 |LeaveCriticalSection(&cs)|ReleaseMutex()|ReleaseSemaphore((hSemaphore, 1, NULL)|
 |DeleteCriticalSection(&cs)|CloseHandle()|CloseHandle()|
 
+# 问题
+* [win10恢复分区如何清除 win10磁盘恢复分区怎么删除](http://www.xitongcheng.com/jiaocheng/win10_article_63036.html)
+
 # 参考
 * [windows核心编程-信号量(semaphore)](https://www.bbsmax.com/A/D8547b73JE/)
 * [windows下临界区的使用](https://blog.csdn.net/s651665496/article/details/47045485)
