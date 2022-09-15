@@ -61,11 +61,23 @@ git reset HEAD^             //撤销上一次commit
 git reset --soft HEAD^             //撤销上一次commit，但是文件add到工作区
 ```
 
+## 克隆（clone）
+
 ## 状态（status）
 
 ## 添加（add）
 
 ## 提交（commit）
+
+## 日志（log）
+```shell
+git log --pretty=oneline <file_name> // 列出文件所有提交记录
+```
+
+## 显示（show）
+```shell
+git show <commit_id/tag> // 显示某次提交或标签的修改内容
+```
 
 ## 标签（tag）
 ### 打标签
@@ -216,5 +228,14 @@ $ git push origin --delete <tagname>
 
 ## 拉取（push）和推送（pull）分支
 
+## 补丁（patch）
+
+# 问题
+* file name too long
+  [如何解决Windows中git “file name too long”错误？](http://www.360doc.com/content/21/0331/15/41344223_969938758.shtml)
+
 参考
 ===
+* [git查看某个文件的修改历史及具体修改内容](https://blog.51cto.com/u_15127605/4788522)
+* [git clone 使用账号密码 windows](https://blog.csdn.net/sunbrightness/article/details/122304775)
+* [使用 git 创建补丁和打补丁](https://blog.csdn.net/weixin_44794688/article/details/123333252)
