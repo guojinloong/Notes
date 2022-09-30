@@ -131,3 +131,4 @@ config_init(no)->error
 # 4 参考
 * [SOEM-1.4.0 tutorial](https://openethercatsociety.github.io/doc/soem/tutorial_8txt.html)
 * [在Windows环境下使用SOEM进行EtherCAT开发——准备篇](https://wxflamy.github.io/2019/09/25/EtherCAT-SOEM/)
+* [SOEM简单示例](https://blog.csdn.net/weixin_43455581/article/details/106171165)

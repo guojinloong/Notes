@@ -5,3 +5,4 @@
 * Powerlink
 * Sercos III
 * EtherNet/IP
+* Mechatrolink-II

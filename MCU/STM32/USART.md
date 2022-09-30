@@ -1,3 +1,7 @@
+简介
+===
+内容
+===
 ## 重定向printf和scanf
 ```C
 #if defined ( __GNUC__ )
@@ -66,5 +70,7 @@ int _read(int file, char *ptr, int len)
 }
 ```
 
-# 参考
+参考
+===
 * [STM32重定向printf()和scanf()到UART](https://my.oschina.net/igiantpanda/blog/1611419)
+* [STM32 串口接收大量数据导致死机](https://www.cnblogs.com/qdrs/p/7701327.html)

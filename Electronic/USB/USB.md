@@ -11,3 +11,4 @@
 * [USB基础---OHCI、UHCI、EHCI和XHCI控制器简介](https://www.likecs.com/show-204953880.html)
 * [USB系列(4) ULPI协议简介](https://blog.csdn.net/huangkangying/article/details/104280372)
 * [飞凌干货丨帮你避开USB VBUS上的“坑”](https://www.bilibili.com/read/cv13307663)
+* [How to use the USB3320 as an USB host in connection with an USB2512B hub?](https://microchipsupport.force.com/s/article/How-to-use-the-USB3320-as-an-USB-host-in-connection-with-an-USB2512B-hub)

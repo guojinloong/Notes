@@ -20,3 +20,4 @@
 参考
 ===
 * [Xilinx SRL16E 使用详解](http://xilinx.eetrend.com/blog/2019/100018715.html)
+* [FPGA上电后IO的默认状态](https://cloud.tencent.com/developer/article/1888608)

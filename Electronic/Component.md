@@ -15,8 +15,26 @@
 |[微盟电子](http://www.microne.com.cn/Index.aspx)||
 |[SGM<br>圣邦微电子](http://cn.sg-micro.com/)||
 |[Winbond<br>华邦电子](https://www.winbond.com/)|W25Q256FV|
+|[Anpec Electronic Corp.<br>茂达电子](http://www.anpec.com.tw/index.aspx?lang=en)|APW7136CCI|
+|[Union<br>上海英联电子](http://www.union-ic.com/cn/s)|UM805RE|
+|[Arterytek<br>雅特力科技](https://www.arterytek.com/cn/index.jsp)|AT32F437|
+|[ASIX<br>亚信电子](https://www.asix.com.tw/cn)|AX58100|
+|[Lattice<br>莱迪思](https://www.latticesemi.com/zh-CN)|LFXP2-5E|
+|[Xilinx<br>赛灵思](https://www.xilinx.com/)|ZYNQ|
 
 ### 常用芯片
+#### SDRAM
+|型号|厂家|
+|---|---|
+|IS42S16400J| ISSI(美国芯成)|
+
+#### DPRAM
+|型号|厂家|
+|---|---|
+|CY7C026A-20AC|CYPRESS(赛普拉斯)|
+|IDT7025|RENESAS(瑞萨)|
+|IDT71V30|RENESAS(瑞萨)/IDT|
+
 ### 芯片查询
 
 ## 接插件
@@ -27,3 +45,4 @@
 参考
 ===
 * [白灯背光驱动IC 小屏白灯背光驱动IC](https://blog.51cto.com/u_15703020/5441285)
+* [芯片包装（packing ）类型](https://www.cnblogs.com/goodday--adacm/p/15307174.html)

@@ -33,6 +33,7 @@ cd /d D:\Software
 
 # 问题
 * [win10恢复分区如何清除 win10磁盘恢复分区怎么删除](http://www.xitongcheng.com/jiaocheng/win10_article_63036.html)
+* [插U盘之后文件夹变成exe格式如何修复？](https://www.zhihu.com/question/52470570)
 
 # 参考
 * [windows核心编程-信号量(semaphore)](https://www.bbsmax.com/A/D8547b73JE/)

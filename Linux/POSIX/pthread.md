@@ -224,3 +224,5 @@ extern int pthread_getattr_np (pthread_t __th, pthread_attr_t *__attr)
 
 # 参考
 * [linux的<pthread.h>](https://www.cnblogs.com/x_wukong/p/5671137.html)
+* [谈标准Linux操作系统实时性的制约因素](https://developer.aliyun.com/article/599856)
+* [Linux内核针对实时性的调优](http://howar.cn/2020/03/15/embedded-linux-real-time/)

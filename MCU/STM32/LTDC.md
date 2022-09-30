@@ -5,3 +5,6 @@
 以800x480，30Hz，RGB565，1层为例：
 LCD_CLK = 800 x 480 x 30 = 11250000 = 11.25M
 LTDC带宽 = 11.25 x 2 = 22.5M
+参考
+===
+* [stm32F4 LTDC优化速度，使得更合理例用SDRAM带宽](https://blog.csdn.net/Jay_WJ/article/details/93585880)
