@@ -1,5 +1,5 @@
 ---
 sort: 1
 ---
-EtherCAT
+# EtherCAT
 {% include list.liquid %}
