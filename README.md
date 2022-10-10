@@ -1,3 +1,3 @@
-# EtherCAT
+# Notes
 
 {% include list.liquid %}
