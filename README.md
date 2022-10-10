@@ -1,10 +1,3 @@
----
-sort: 1
----
+# Notes
 
-# EtherCAT
-
-<!-- {% include list.liquid %} -->
-
-- [EtherCAT](EtherCAT/EtherCAT.md)
-- [EtherCAT Products](EtherCAT/EtherCAT Products.md)
+{% include list.liquid %}
