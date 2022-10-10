@@ -1,3 +1,7 @@
+---
+sort: 1
+---
+
 # EtherCAT协议
 ## 数据帧结构
   EtherCAT数据帧只是对IEEE 802.3 Ethernet进行扩充，并未对基本结构进行任何变更，所以可以转送标准的Ethernet帧内的数据。
