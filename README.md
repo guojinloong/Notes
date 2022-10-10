@@ -4,4 +4,4 @@ sort: 1
 
 # EtherCAT
 
-{% include list.liquid %}
+<!-- {% include list.liquid %} -->
